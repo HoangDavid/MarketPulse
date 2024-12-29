@@ -1,6 +1,9 @@
 # Virtual environment
 venv/
 
-# Byte-compiled files
+# Bytke-compiled files
 __pycache__/
 *.py[cod]
+
+#  Credentials: API secret and database uri
+.env
