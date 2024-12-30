@@ -1,13 +1,14 @@
 import asyncio
 from asyncpraw import Reddit
-from asyncpraw.models import Submission
 from decouple import config
 
 # Initialize the Reddit client
 reddit = Reddit(
     client_id=config("REDDIT_CLIENT_ID"),
     client_secret=config("REDDIT_SECRET"),
-    user_agent=config("REDDIT_USER_AGENT")
+    user_agent=config("REDDIT_USER_AGENT"),
+    username=config("REDDIT_USERNAME"),
+    password=config("REDDIT_PASSWORD"),
 )
 
 async def fetch_reddit_posts(subreddit_name: str, limit: int = 10):
