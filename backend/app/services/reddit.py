@@ -11,12 +11,14 @@ reddit = Reddit(
     password=config("REDDIT_PASSWORD"),
 )
 
-async def fetch_reddit_posts(subreddit_name: str, limit: int = 10):
+async def fetch_reddit_posts(subreddit_name: str, query: str, sort_by: str, limit: int = 10):
     """
     Fetch posts from a specified subreddit.
 
     Args:
         subreddit_name (str): The name of the subreddit (e.g., 'stocks').
+        query (str): query within the subreddit
+        sort_by (str): sort the post by hot, popularity, best, relevance
         limit (int): The number of posts to fetch (default: 10).
 
     Returns:
@@ -26,11 +28,10 @@ async def fetch_reddit_posts(subreddit_name: str, limit: int = 10):
     posts = []
 
     # Fetch new posts
-    async for submission in subreddit.new(limit=limit):
+    async for submission in subreddit.search(query, limit=limit, sort=sort_by):
         post = {
             "id": submission.id,
             "title": submission.title,
-            "body": submission.selftext,
             "created_utc": submission.created_utc,
             "upvotes": submission.score,
             "comments": submission.num_comments,

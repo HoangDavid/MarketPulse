@@ -13,4 +13,4 @@ async def root():
 
 
 # Note to self:
-#   To run the app for FASTAPI: uvicorn main:app --reload 
+#   To run the app for FASTAPI: uvicorn main:app --reload
