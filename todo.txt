@@ -1,9 +1,11 @@
 
 
 TODO:
-- call Yahoo API for data
-- find a targeted sentiment analysis model -> maybe rolling correlation
-- find a model to calcualte the correlation score between financial events and stock prices
+- call Yahoo API for data  V
+- endpoint for sentiment analysis model (distilbert-uncased)
+- write the functions for preprocessing in utils folder to do targeted sentiment analysis
+- find a correlation formula for relationship between sentiment analysis and stock price -> maybe rolling correlation
+- Maybe find an API for news article for tech headlines
 
 
 
