@@ -11,7 +11,7 @@ reddit = Reddit(
     password=config("REDDIT_PASSWORD"),
 )
 
-async def fetch_reddit_posts(subreddit_name: str, query: str, sort_by: str, limit: int = 10):
+async def fetch_reddit_posts(subreddit: str, query: str, sort_by: str, limit: int = 10):
     """
     Fetch posts from a specified subreddit.
 
@@ -24,7 +24,7 @@ async def fetch_reddit_posts(subreddit_name: str, query: str, sort_by: str, limi
     Returns:
         list[dict]: A list of posts as dictionaries.
     """
-    subreddit = await reddit.subreddit(subreddit_name)
+    subreddit = await reddit.subreddit(subreddit)
     posts = []
 
     # Fetch new posts
@@ -36,7 +36,7 @@ async def fetch_reddit_posts(subreddit_name: str, query: str, sort_by: str, limi
             "upvotes": submission.score,
             "comments": submission.num_comments,
             "url": submission.url,
-            "subreddit": subreddit_name,
+            "subreddit": subreddit,
         }
         posts.append(post)
 
