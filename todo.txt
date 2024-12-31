@@ -1,6 +1,7 @@
 
 
 TODO:
+- call Yahoo API for data
 - find a targeted sentiment analysis model -> maybe rolling correlation
 - find a model to calcualte the correlation score between financial events and stock prices
 
