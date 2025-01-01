@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from routers import reddit, yahoo, sentiment
+from routers import reddit, yahoo, ABSA_model, market_sentiment
 # Dict to hold preloaded pretrained models
 models = {}
 
@@ -22,7 +22,10 @@ app.include_router(reddit.router, prefix="/api", tags=["Reddit"])
 app.include_router(yahoo.router, prefix="/api", tags=["Yahoo"])
 
 # Include Sentiment Model router
-app.include_router(sentiment.router, prefix="/api", tags=["Sentiment"])
+app.include_router(ABSA_model.router, prefix="/api", tags=["ABSA model"])
+
+# Include Market sentiment indicator router
+app.include_router(market_sentiment.router, prefix="/api", tags="Market Sentiment")
 
 @app.get("/")
 async def root():

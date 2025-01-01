@@ -34,6 +34,7 @@ async def get_live_stock_data(ticker:str):
     Returns:
         JSON: Latest stock price information.
     """
+    # TODO: fetch by hours instead
     data = fetch_live_stock_data(ticker=ticker)
     if data is None:
         return HTTPException(status_code=500, detail="Error fetching historical stock data.")
