@@ -1,6 +1,8 @@
 import asyncio
 from asyncpraw import Reddit
 from decouple import config
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # Initialize the Reddit client
 reddit = Reddit(
@@ -11,7 +13,8 @@ reddit = Reddit(
     password=config("REDDIT_PASSWORD"),
 )
 
-async def fetch_reddit_posts(subreddit: str, query: str, sort_by: str, limit: int = 10):
+async def fetch_reddit_posts(subreddit_name: str, query: str, sort_by: str, limit: int):
+    print(f"Fetching posts from subreddit: {subreddit_name}, query: {query}, sort_by: {sort_by}, limit: {limit}")
     """
     Fetch posts from a specified subreddit.
 
@@ -24,7 +27,7 @@ async def fetch_reddit_posts(subreddit: str, query: str, sort_by: str, limit: in
     Returns:
         list[dict]: A list of posts as dictionaries.
     """
-    subreddit = await reddit.subreddit(subreddit)
+    subreddit = await reddit.subreddit(subreddit_name)
     posts = []
 
     # Fetch new posts
@@ -32,11 +35,11 @@ async def fetch_reddit_posts(subreddit: str, query: str, sort_by: str, limit: in
         post = {
             "id": submission.id,
             "title": submission.title,
-            "created_utc": submission.created_utc,
+            "time_stamp": datetime.fromtimestamp(submission.created_utc, tz=ZoneInfo("US/Eastern")),
             "upvotes": submission.score,
             "comments": submission.num_comments,
             "url": submission.url,
-            "subreddit": subreddit,
+            "subreddit": subreddit_name,
         }
         posts.append(post)
 

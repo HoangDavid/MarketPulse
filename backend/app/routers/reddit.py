@@ -3,7 +3,7 @@ from services.reddit import fetch_reddit_posts
 router = APIRouter()
 
 @router.get("/reddit/{subreddit}")
-async def get_reddit_posts(subreddit: str, query: str, sort_by: str, limit: int = 10):
+async def get_reddit_posts(subreddit: str, query: str = "", sort_by: str = "new", limit: int = 10):
     """
     API endpoint to fetch Reddit posts from a subreddit.
 
