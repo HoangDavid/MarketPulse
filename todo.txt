@@ -1,11 +1,21 @@
 
+GOAL: Market sentiment (tech sector,) analysis and linked to event that cause 
 
 TODO:
-- call Yahoo API for data  V
-- endpoint for sentiment analysis model (distilbert-uncased)
-- write the functions for preprocessing in utils folder to do targeted sentiment analysis
-- find a correlation formula for relationship between sentiment analysis and stock price -> maybe rolling correlation
-- Maybe find an API for news article for tech headlines
+- track sentiment and stock price changes correlation using rolling correlation
+    - have mongoDB up first to store all the data over the year for sentiment score and stock prices
+        - for sentiment use market sentiment indicator to aid the lack of social sentiment
+    - historical: store the stock price / sentiment score by the days (5 days, 1 month, 6 months, 1 year)
+    - real-time:
+        - store the stock price / sentiment score by the hours in the current day
+        - after the day calculate the average sentiment / correlation after the end of day
+
+- Highlight key events on the timeline that connect changes to the stock price movment (somehow ???)
+- Rank those events in terms of influence (top 10)
+
+- Fetch/calculate the market sentiment indicators
+- write the functions for preprocessing in utils folder to do targeted sentiment analysis / find a aspect-based model
+- real-time update (from terminal) sentiment score using both social sentiment and weighted market sentiment indcators
 
 
 
