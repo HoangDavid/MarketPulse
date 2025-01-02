@@ -48,7 +48,9 @@ def fetch_live_stock_data(ticker):
 
 # Fetch CBOE Volatility Index (VIX) from Yahoo Finance
 def fetch_vix_data():
-    vix_intraday = yf.download('^VIX', interval='1h', period='5d')  # Last 5 days with 1-hour interval
+    vix_intraday = yf.download('^VIX', interval='1h', period='1d')  # Last 5 days with 1-hour interval
+    
+    # BUG: parsing error when changing interval from 1h to 1d
     if vix_intraday.empty:
         raise ValueError("No intraday VIX data available")
     
@@ -56,3 +58,5 @@ def fetch_vix_data():
     vix_intraday["Datetime"] = vix_intraday["Datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
     return [{"Datetime": row["Datetime"], "Close": row["Close"]} for _, row in vix_intraday.iterrows()]
 
+
+# TODO: convert all time to EST time 
