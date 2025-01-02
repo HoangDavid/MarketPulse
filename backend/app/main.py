@@ -8,7 +8,8 @@ models = {}
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     from transformers import pipeline
-    models["sentiment_pipeline"] = pipeline("text-classification", model="distilbert/distilbert-base-uncased-finetuned-sst-2-english")
+    # use Finbert model 
+    models["sentiment_pipeline"] = pipeline("text-classification", model="distilbert/distilbert-base-uncased-finetuned-sst-2-english") 
     yield
     models.clear()
 

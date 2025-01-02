@@ -55,3 +55,4 @@ def fetch_vix_data():
     vix_intraday.reset_index(inplace=True)
     vix_intraday["Datetime"] = vix_intraday["Datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
     return [{"Datetime": row["Datetime"], "Close": row["Close"]} for _, row in vix_intraday.iterrows()]
+

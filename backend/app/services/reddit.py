@@ -1,4 +1,3 @@
-import asyncio
 from asyncpraw import Reddit
 from decouple import config
 from datetime import datetime
@@ -13,34 +12,44 @@ reddit = Reddit(
     password=config("REDDIT_PASSWORD"),
 )
 
-async def fetch_reddit_posts(subreddit_name: str, query: str, sort_by: str, limit: int):
-    print(f"Fetching posts from subreddit: {subreddit_name}, query: {query}, sort_by: {sort_by}, limit: {limit}")
-    """
-    Fetch posts from a specified subreddit.
-
+async def fetch_reddit_posts(
+        subreddit_name: str, query: str, 
+        time_filter: str, limit: int = None):
+    '''
     Args:
         subreddit_name (str): The name of the subreddit (e.g., 'stocks').
-        query (str): query within the subreddit
-        sort_by (str): sort the post by hot, popularity, best, relevance
-        limit (int): The number of posts to fetch (default: 10).
-
-    Returns:
-        list[dict]: A list of posts as dictionaries.
-    """
+        query (str): The search query within the subreddit.
+        time_filter: search the submissions (hour, day, week, month, year, all)
+        batch_size (int): Number of posts to fetch per batch.
+        start_date (datetime): Start of the time range.
+    '''
+    
     subreddit = await reddit.subreddit(subreddit_name)
     posts = []
 
-    # Fetch new posts
-    async for submission in subreddit.search(query, limit=limit, sort=sort_by):
+    async for submission in subreddit.search(query, time_filter=time_filter, sort="new", limit=limit):
         post = {
-            "id": submission.id,
             "title": submission.title,
             "time_stamp": datetime.fromtimestamp(submission.created_utc, tz=ZoneInfo("US/Eastern")),
             "upvotes": submission.score,
             "comments": submission.num_comments,
-            "url": submission.url,
-            "subreddit": subreddit_name,
+            "body": submission.selftext,
         }
+        
         posts.append(post)
 
     return posts
+
+
+def clean_post():
+    ...
+
+
+'''
+r/technology: news and public opinion on the matter -> use distilbert/Finbert to sentiment on a headline
+r/
+TODO:
+- fetch posts until the first 
+- filter posts to remove noises 
+- filter batch process the comments for sentiment as well
+'''

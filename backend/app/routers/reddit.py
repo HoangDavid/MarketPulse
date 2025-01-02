@@ -3,7 +3,7 @@ from services.reddit import fetch_reddit_posts
 router = APIRouter()
 
 @router.get("/reddit/{subreddit}")
-async def get_reddit_posts(subreddit: str, query: str = "", sort_by: str = "new", limit: int = 10):
+async def get_reddit_posts(subreddit: str, query: str, time_filter: str, limit: int = None):
     """
     API endpoint to fetch Reddit posts from a subreddit.
 
@@ -17,7 +17,7 @@ async def get_reddit_posts(subreddit: str, query: str = "", sort_by: str = "new"
         JSON response with subreddit posts.
     """
     try:
-        posts = await fetch_reddit_posts(subreddit, query, sort_by, limit)
-        return {"subreddit": subreddit, "sort_by": sort_by, "posts": posts}
+        posts = await fetch_reddit_posts(subreddit, query, time_filter, limit)
+        return {"subreddit": subreddit, "posts": posts}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

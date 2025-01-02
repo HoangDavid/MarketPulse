@@ -20,3 +20,16 @@ async def get_vix():
         return {"vix_intraday_data": vix_data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+    
+
+@router.get("/highlow")
+async def get_high_low():
+    ...
+
+@router.get("/bpi")
+async def get_bpi():
+    ...
+
+# TODO: finish the bpi and highlow function
+# TODO: add connection to database (mongodb)
+# TODO: store preprocessed data from reddit API and Yahoo API
