@@ -24,6 +24,7 @@ reddit = asyncpraw.Reddit(
     password=config("REDDIT_PASSWORD"),
 )
 
+# Take into account the computer resource
 semaphore = asyncio.Semaphore(os.cpu_count() * 2) 
 
 # Used for historical and updating sentiment of posts throughout the week
@@ -47,7 +48,7 @@ async def fetch_reddit_posts(
         async with semaphore:
             # Top 5 most interacted comment
             submission.comment_sort = "top"
-            submission.comment_limit = 5
+            submission.comment_limit = 10
             await submission.load()
             await submission.comments.replace_more(limit=0)
 
@@ -59,12 +60,13 @@ async def fetch_reddit_posts(
                     submission.created_utc, ZoneInfo("US/Eastern")
                 ).strftime('%Y-%m-%d %H:%M:%S'),
                 "interest score": interest_score,
-                "comments": [comment.body for comment in submission.comments]
+                "article url": submission.url, 
+                "comments": [(comment.body, comment.score)  for comment in submission.comments]
             }
 
     # Queue the tasks to run concurrently
     tasks = []
-    async for submission in subreddit.search(f'title:{query}', time_filter=time_filter, sort="top", limit=limit):
+    async for submission in subreddit.search(f'title:{query}', time_filter=time_filter, sort="new", limit=limit):
         tasks.append(fetch_one_post(submission))
 
     posts = await asyncio.gather(*tasks, return_exceptions=False)

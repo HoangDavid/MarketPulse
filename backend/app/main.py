@@ -1,23 +1,11 @@
 from fastapi import FastAPI
-from contextlib import asynccontextmanager
-from routers import reddit, yahoo, ABSA_model, market_sentiment
-# Dict to hold preloaded pretrained models
-models = {}
-
-# Preload model upon app initialization
-@asynccontextmanager
-async def lifespan(app:FastAPI):
-    from transformers import pipeline
-    # use Finbert model 
-    models["sentiment_pipeline"] = pipeline("text-classification", model="distilbert/distilbert-base-uncased-finetuned-sst-2-english") 
-    yield
-    models.clear()
-
+from routers import yahoo, ABSA_model, market_sentiment, social_sentiment
+from services.resource_init import lifespan
 
 
 app = FastAPI(lifespan=lifespan)
 # Include Reddit router
-app.include_router(reddit.router, prefix="/api", tags=["Reddit"])
+app.include_router(social_sentiment.router, prefix="/api", tags=["social-sentiment"])
 
 # Include Yahoo router
 app.include_router(yahoo.router, prefix="/api", tags=["Yahoo"])
