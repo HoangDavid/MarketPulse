@@ -1,8 +1,18 @@
 import asyncpraw
+import asyncio
 import math
+import logging
+import os
 from decouple import config
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
+
+# Logging for server
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 # Initialize the Reddit client
@@ -13,6 +23,8 @@ reddit = asyncpraw.Reddit(
     username=config("REDDIT_USERNAME"),
     password=config("REDDIT_PASSWORD"),
 )
+
+semaphore = asyncio.Semaphore(os.cpu_count() * 2) 
 
 # Used for historical and updating sentiment of posts throughout the week
 async def fetch_reddit_posts(
@@ -30,24 +42,38 @@ async def fetch_reddit_posts(
     subreddit = await reddit.subreddit(subreddit_name)
     posts = []
 
+    # Run the processing of the reddit post concurrently
+    async def fetch_one_post(submission: asyncpraw.models.Submission):
+        async with semaphore:
+            # Top 5 most interacted comment
+            submission.comment_sort = "top"
+            submission.comment_limit = 5
+            await submission.load()
+            await submission.comments.replace_more(limit=0)
+
+            interest_score = engagement_rate(submission)
+            
+            return {
+                "title": submission.title,
+                "timestamp": datetime.fromtimestamp(
+                    submission.created_utc, ZoneInfo("US/Eastern")
+                ).strftime('%Y-%m-%d %H:%M:%S'),
+                "interest score": interest_score,
+                "comments": [comment.body for comment in submission.comments]
+            }
+
+    # Queue the tasks to run concurrently
+    tasks = []
     async for submission in subreddit.search(f'title:{query}', time_filter=time_filter, sort="top", limit=limit):
-        # Only take top 5 comments
-        engagement_score = await is_influential(submission)
-        break
-        posts.append(engagement_score)
+        tasks.append(fetch_one_post(submission))
+
+    posts = await asyncio.gather(*tasks, return_exceptions=False)
+    
     return posts
 
-
-
-
 # Calculate the influential index of a submission based of engagement rate in the comments volume, 
-async def is_influential(submission: asyncpraw.models.Submission, max_interest: int=100000) -> bool:
+def engagement_rate(submission: asyncpraw.models.Submission, max_interest: int=100000) -> float:
     try:
-        submission.comment_sort = "top"
-        submission.comment_limit = 5
-        await submission.load()
-        await submission.comments.replace_more(limit=0)
-
         # Metrics:
         post_score = submission.score
         upvote_ratio = submission.upvote_ratio
@@ -66,18 +92,14 @@ async def is_influential(submission: asyncpraw.models.Submission, max_interest: 
         total_interest = post_interest + discussion_volume + discussion_quality
         
         normalized_interest = (total_interest / max_interest) * 100
-        # Below 1 is filtered out
-        print(normalized_interest)
         
-        return len(submission.comments) 
+        return normalized_interest
 
     except Exception as e:
-        print(f"Error fetching comments {e}")
+        logging.error(f"Error calculating engagement rate for submission{submission.title}:{e}", exc_info=True)
         return 0
     
 
-    
-    
     
     
     

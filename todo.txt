@@ -21,6 +21,7 @@ TODO:
 
 Helpful command:
 - To run the app for FASTAPI: uvicorn main:app --reload
+- To start mongodb server in docker: docker run --name mongodb -d -p 27017:27017 -v mongo-data:/data/db mongo
 
 
 Data flow (maybe):
