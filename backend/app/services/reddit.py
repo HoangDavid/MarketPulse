@@ -45,7 +45,7 @@ async def fetch_reddit_posts(
     # Run the processing of the reddit post concurrently
     async def fetch_one_post(submission: asyncpraw.models.Submission):
         async with semaphore:
-            # Top 5 most interacted comment
+            # Top 10 most interacted comment
             submission.comment_sort = "top"
             submission.comment_limit = 10
             await submission.load()
