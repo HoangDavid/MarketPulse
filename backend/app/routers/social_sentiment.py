@@ -1,7 +1,13 @@
+import asyncio
+import os
+import time
 from fastapi import APIRouter, HTTPException
 from services.reddit import fetch_reddit_posts
 from services.resource_init import MODELS
+
+
 router = APIRouter()
+semaphore = asyncio.Semaphore(os.cpu_count() * 2) 
 
 @router.get("/social-sentiment/{subreddit}")
 async def analyze_social_sentiment(subreddit: str, query: str, time_filter: str, limit: int = None):
@@ -18,34 +24,49 @@ async def analyze_social_sentiment(subreddit: str, query: str, time_filter: str,
         JSON response with that subreddit posts sentiment score
     """
     try:
-        ret = []
-        posts = await fetch_reddit_posts(subreddit, query, time_filter, limit)
-        for post in posts:
-            sentiment = get_post_sentiment(post['title'], post['comments'])
-            ret.append({
-                "title": post["title"],
-                "timestamp": post["timestamp"],
-                "interest score": post["interest score"],
-                "article url": post["article url"],
-                "sentiment": sentiment
-            })
-            break
+        # Start time for latency check
+        start_time = time.perf_counter()
         
-        return {"subreddit": subreddit, "analyzed_setiment": ret}
+        # Run the the sentiment analysis in parrallel
+        async def analyze_post_sentiment(post: dict):
+            async with semaphore:
+                sentiment = get_post_sentiment(post['title'], post['comments'])
+                return {
+                    "title": post["title"],
+                    "timestamp": post["timestamp"],
+                    "interest score": post["interest score"],
+                    "article url": post["article url"],
+                    "top comment": post["comments"][0][0] if len(post["comments"]) > 0 else "",
+                    "sentiment": sentiment
+                }
+
+        posts = await fetch_reddit_posts(subreddit, query, time_filter, limit)
+        
+        tasks = [analyze_post_sentiment(post) for post in posts]
+        
+        analyzed_sentiment = await asyncio.gather(*tasks, return_exceptions=False)
+
+        # Calculate the latency for the operation
+        end_time = time.perf_counter()
+        latency = end_time - start_time
+        
+        return {"subreddit": subreddit, "latency": latency ,"analyzed_sentiment": analyzed_sentiment}
+
     except Exception as e:
         # TODO:Logging in the server and send a payload to the client
         raise HTTPException(status_code=500, detail=str(e))
     
 
 # Analyze each submission sentiment
-def get_post_sentiment(title: str, comments: list, title_weight: float = 0.4, comments_weight: float = 0.6) -> dict:
+def get_post_sentiment(title: str, comments: list, title_weight: float = 0.3, comments_weight: float = 0.7) -> dict:
     try:
         total_votes = sum(comment[1] for comment in comments) or 1 # avoid division by 0
         sentiment_scores = []
         
         # Run the model for comments sentiment analysis
         for comment in comments:
-            sentiments = MODELS['social_sentiment'](comment[0], return_all_scores=True)[0]
+            # Model max input token is 512
+            sentiments = MODELS['social_sentiment'](comment[0][:512], return_all_scores=True)[0]
             for sentiment in sentiments:
                 sentiment_scores.append({
                     "label": sentiment["label"],
@@ -54,17 +75,23 @@ def get_post_sentiment(title: str, comments: list, title_weight: float = 0.4, co
                 })
 
         # Aggregrate the seniments from the comments
-        comments_positive_score = sum(s["score"] * s["weight"] for s in sentiment_scores if s["label"] == "NEGATIVE")
-        comments_negative_score = sum(s["score"] * s["weight"] for s in sentiment_scores if s["label"] == "POSITIVE")
+        comments_negative_score = sum(s["score"] * s["weight"] for s in sentiment_scores if s["label"] == "NEGATIVE")
+        comments_positive_score = sum(s["score"] * s["weight"] for s in sentiment_scores if s["label"] == "POSITIVE")
+
         
         # Run the model for title sentiment analysis
-        title_sentiment = MODELS['social_sentiment'](title, top_k=None)[0]
+        title_sentiment = MODELS['social_sentiment'](title, return_all_scores=True)[0]
         title_score = {}
         for sentiment in title_sentiment:
-            title_score[title_sentiment['label']] = title_sentiment["score"]
+            title_score[sentiment['label']] = sentiment["score"]
 
-        overall_positive_score = title_score.get("POSITIVE", 0) * title_weight + comments_positive_score * comments_weight
-        overall_negative_score = title_score.get("NEGATIVE", 0) * title_weight + comments_negative_score * comments_weight
+        overall_positive_score = title_score["POSITIVE"] * title_weight + comments_positive_score * comments_weight
+        overall_negative_score = title_score["NEGATIVE"] * title_weight + comments_negative_score * comments_weight
+
+        # normalized score
+        sum_score = overall_positive_score + overall_negative_score
+        overall_positive_score = overall_positive_score / sum_score
+        overall_negative_score = overall_negative_score / sum_score
 
         overall_label = ""
         if overall_positive_score > overall_negative_score:

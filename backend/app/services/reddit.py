@@ -41,7 +41,6 @@ async def fetch_reddit_posts(
     '''
     
     subreddit = await reddit.subreddit(subreddit_name)
-    posts = []
 
     # Run the processing of the reddit post concurrently
     async def fetch_one_post(submission: asyncpraw.models.Submission):
