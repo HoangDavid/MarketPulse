@@ -2,7 +2,7 @@ import yfinance as yf
 import pandas as pd
 import os
 import asyncio
-
+from fastapi import HTTPException
 
 # Define a semaphore to limit the downloads
 semaphore = asyncio.Semaphore(os.cpu_count() * 2)
@@ -32,4 +32,13 @@ async def fetch_stock_data(ticker: str, start_date: str, end_date: str, interval
         
         return df
     except Exception as e:
-        raise e
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+
+async def fetch_NYSE_stock(start_date: str, end_date: str, interval) -> pd.DataFrame:
+    try:
+        nyse_ticker = pd.read_csv("/resources/nyse-listed.csv")
+        print(nyse_ticker)
+        return None
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")

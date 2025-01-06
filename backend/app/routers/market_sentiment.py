@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException
-from services.yahoo import fetch_stock_data
+from services.yahoo import fetch_stock_data, fetch_NYSE_stock
 
 
 
@@ -9,7 +9,7 @@ router = APIRouter()
 
 # CBOE Votatility Index (VIX)
 @router.get("/market-sentiment/vix")
-async def get_vix(moving_avg: int = 50, interval: str = "1d"):
+async def get_vix(time_filter: str = "year", moving_avg: int = 50, interval: str = "1d"):
     # Moving average unit is in days
     try: 
         # Make sure the cutoff isat least a year from now
@@ -37,7 +37,8 @@ async def get_vix(moving_avg: int = 50, interval: str = "1d"):
         vix_data["z_score"] = (vix_data["diff"] - diff_mean) / diff_std
         vix_data["fear_greed_score"] = vix_data["z_score"].apply(
             lambda z: 100 - ((max(min(z, 2), -2) + 2) * 25))
-    
+        
+        # Select display collumns
         vix_data = vix_data[["timestamp", "VIX", f"VIX_{moving_avg}", "fear_greed_score"]].to_dict('records')
      
         return {"VIX": vix_data}
@@ -76,6 +77,7 @@ async def get_market_momentum(time_filter: str = "year", moving_avg: int = 125, 
             lambda z: 100 - ((max(min(z, 3), -3) + 3) * (100 / 6)))
         mm_data = mm_data [pd.to_datetime(mm_data["Date"]) >= cutoff_date]
 
+        # Select display collumns
         mm_data = mm_data[["timestamp", "S&P500", f"S&P500_{moving_avg}", "fear_greed_score"]].to_dict('records')
      
         return {"market_momentum": mm_data }
@@ -83,11 +85,11 @@ async def get_market_momentum(time_filter: str = "year", moving_avg: int = 125, 
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-# TODO: Calculate safe haven demand
-@router.get("market-sentiment/safe_haven_demand")
-async def get_safe_haven_demand(difference: int = 20, interval: str = "1d"):
+# Calculate safe haven demand
+@router.get("/market-sentiment/safe_haven")
+async def get_safe_haven_demand(time_filter: str = "year", difference: int = 20, interval: str = "1d"):
     try:
-         # Make sure the cutoff is a year from now
+        # Make sure the cutoff is a year from now
         now = datetime.now()
         start_year = (now - timedelta(365)).year
         cutoff_date = datetime(start_year, 1, 1)
@@ -105,32 +107,51 @@ async def get_safe_haven_demand(difference: int = 20, interval: str = "1d"):
                                      end_date=now.strftime('%Y-%m-%d'),
                                      interval=interval)
         
-        
-        
+        # Calculate the percentage change in {difference} trading days
+        spy["return_20"] = spy["Close_SPY"].pct_change(difference)
+        tlt["return_20"] = tlt["Close_TLT"].pct_change(difference)
 
-        return None
+        merged = pd.DataFrame({
+            "timestamp": spy["Date"],
+            "SPY_return_20": spy["return_20"],
+            "TLT_return_20": tlt["return_20"]
+        }).dropna()
+
+        # Calculate the fear / greed score
+        merged["safe_haven"] = merged["SPY_return_20"] - merged["TLT_return_20"]
+        merged_mean = merged["safe_haven"].mean()
+        merged_std = merged["safe_haven"].std()
+        merged["z_score"] = (merged["safe_haven"] - merged_mean) / merged_std
+        merged["fear_greed_score"] = merged["z_score"].apply(
+            lambda z: 100 - ((max(min(z, 2), -2) + 2) * 25))
+        merged = merged[pd.to_datetime(merged["timestamp"]) >= cutoff_date]
+
+        # Select display collumns
+        merged = merged[["timestamp", "safe_haven", "fear_greed_score"]].to_dict(orient="records")
+        
+        return {"safe_haven_demand": merged}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-# TODO: Calculate yield spread: junk bonds vs. investment grade
-@router.get("/market-sentiment/yield_spread")
-async def get_yield_spread():
-    pass
-
 # TODO: Calculate stock price breadth: McClellan Volume Summation Index
-@router.get("market-sentiment/stock_price_breadth")
-async def get_stock_price_breadth():
-    pass
+@router.get("/market-sentiment/stock_price_breadth")
+async def get_stock_price_breadth(time_filter: str = "year", interval: str = "1d"):
+    try:
+
+        fetch_NYSE_stock()
+        return None
+    except Exception as e :
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
 #  TODO: Calculate the NYSE highs and lows (maybe: high computational power)
 @router.get("/market-sentiment/highs_lows")
 async def get_highs_lows(window_size: int = 52, interval: str = "1d"):
     # Moving average unit is in weeks
-    try:  
+    try:
+        
         return None
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 

@@ -11,7 +11,7 @@ app.include_router(social_sentiment.router, prefix="/api", tags=["social-sentime
 app.include_router(stock_price.router, prefix="/api", tags=["stock-price"])
 
 # Include Market sentiment indicator router
-app.include_router(market_sentiment.router, prefix="/api", tags="market-sentiment")
+app.include_router(market_sentiment.router, prefix="/api", tags=["market-sentiment"])
 
 @app.get("/")
 async def root():
