@@ -30,7 +30,7 @@ async def analyze_social_sentiment(subreddit: str, query: str, time_filter: str,
         # Run the the sentiment analysis in parrallel
         async def analyze_post_sentiment(post: dict):
             async with semaphore:
-                sentiment = get_post_sentiment(post['title'], post['comments'])
+                sentiment = await get_post_sentiment(post['title'], post['comments'])
                 return {
                     "title": post["title"],
                     "timestamp": post["timestamp"],
@@ -58,7 +58,7 @@ async def analyze_social_sentiment(subreddit: str, query: str, time_filter: str,
     
 
 # Analyze each submission sentiment
-def get_post_sentiment(title: str, comments: list, title_weight: float = 0.3, comments_weight: float = 0.7) -> dict:
+async def get_post_sentiment(title: str, comments: list, title_weight: float = 0.3, comments_weight: float = 0.7) -> dict:
     try:
         total_votes = sum(comment[1] for comment in comments) or 1 # avoid division by 0
         sentiment_scores = []
@@ -66,8 +66,12 @@ def get_post_sentiment(title: str, comments: list, title_weight: float = 0.3, co
         # Run the model for comments sentiment analysis
         for comment in comments:
             # Model max input token is 512
-            sentiments = MODELS['social_sentiment'](comment[0][:512], return_all_scores=True)[0]
-            for sentiment in sentiments:
+            sentiments = await asyncio.to_thread(
+                MODELS['social_sentiment'], 
+                comment[0][:512], 
+                return_all_scores=True)
+
+            for sentiment in sentiments[0]:
                 sentiment_scores.append({
                     "label": sentiment["label"],
                     "score": sentiment["score"],
@@ -80,9 +84,13 @@ def get_post_sentiment(title: str, comments: list, title_weight: float = 0.3, co
 
         
         # Run the model for title sentiment analysis
-        title_sentiment = MODELS['social_sentiment'](title, return_all_scores=True)[0]
+        title_sentiment = await asyncio.to_thread(
+            MODELS['social_sentiment'],
+            title, 
+            return_all_scores=True)
+    
         title_score = {}
-        for sentiment in title_sentiment:
+        for sentiment in title_sentiment[0]:
             title_score[sentiment['label']] = sentiment["score"]
 
         overall_positive_score = title_score["POSITIVE"] * title_weight + comments_positive_score * comments_weight
@@ -90,8 +98,9 @@ def get_post_sentiment(title: str, comments: list, title_weight: float = 0.3, co
 
         # normalized score
         sum_score = overall_positive_score + overall_negative_score
-        overall_positive_score = overall_positive_score / sum_score
-        overall_negative_score = overall_negative_score / sum_score
+        if sum_score > 0:
+            overall_positive_score = overall_positive_score / sum_score
+            overall_negative_score = overall_negative_score / sum_score
 
         overall_label = ""
         if overall_positive_score > overall_negative_score:
