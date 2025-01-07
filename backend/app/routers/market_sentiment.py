@@ -137,7 +137,7 @@ async def get_safe_haven_demand(time_filter: str = "year", difference: int = 20,
 
 
 
-# TODO: Yield spread: junk bonds vs investment grade
+# Yield spread: junk bonds vs investment grade
 @router.get("/market-sentiment/yield_spread")
 async def get_yield_spread(time_filter: str = "year", interval: str = "1d"):
     try:
@@ -157,8 +157,8 @@ async def get_yield_spread(time_filter: str = "year", interval: str = "1d"):
                                         interval=interval)
         
         # Calculate the rolling dividend yields (as a proxy for bond yields)
-        hyg["yield"] = hyg["Close_HYG"].pct_change(periods=1) + 1  # Approximation for dividend yield
-        lqd["yield"] = lqd["Close_LQD"].pct_change(periods=1) + 1  # Approximation for dividend yield
+        hyg["yield"] = hyg["Close_HYG"].pct_change(periods=1) + 1
+        lqd["yield"] = lqd["Close_LQD"].pct_change(periods=1) + 1  
 
         # Merge the data on the timestamp
         merged = pd.DataFrame({
@@ -191,10 +191,7 @@ async def get_yield_spread(time_filter: str = "year", interval: str = "1d"):
 
 '''
 TODO:
-- vix index with 50 days moving average v
-- Market momentum: S&P 500 and its 125-day moving average v
-- Yield spread: junk bonds vs. investment grade v
-- Difference in 20-day stock and bond returns v
+- Real time for one day API calling
 '''
 
 # TODO: check how to each index is fear and greed
