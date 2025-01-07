@@ -33,12 +33,3 @@ async def fetch_stock_data(ticker: str, start_date: str, end_date: str, interval
         return df
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-
-
-async def fetch_NYSE_stock(start_date: str, end_date: str, interval) -> pd.DataFrame:
-    try:
-        nyse_ticker = pd.read_csv("/resources/nyse-listed.csv")
-        print(nyse_ticker)
-        return None
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")

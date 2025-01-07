@@ -8,5 +8,8 @@ r/technology
 - A positive title could have negative comments, reflecting disagreement or skepticism.
 - A negative title could have positive comments, showing support for a company despite criticism.
 
+Yield spread indicator:
+- HYG: Tracks the iBoxx $ High Yield Corporate Bond Index
+- LQD: Tracks the iBoxx $ Investment Grade Corporate Bond Index.
 
 Getting historical sentiment / stock takes ~ 5 minutes

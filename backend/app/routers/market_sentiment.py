@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException
-from services.yahoo import fetch_stock_data, fetch_NYSE_stock
+from services.yahoo import fetch_stock_data
 
 
 
@@ -46,6 +46,7 @@ async def get_vix(time_filter: str = "year", moving_avg: int = 50, interval: str
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
     
 
+
 # Calculate S&P500 market momentum
 @router.get("/market-sentiment/market_momentum")
 async def get_market_momentum(time_filter: str = "year", moving_avg: int = 125, interval: str = "1d"):
@@ -85,6 +86,7 @@ async def get_market_momentum(time_filter: str = "year", moving_avg: int = 125, 
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
+
 # Calculate safe haven demand
 @router.get("/market-sentiment/safe_haven")
 async def get_safe_haven_demand(time_filter: str = "year", difference: int = 20, interval: str = "1d"):
@@ -102,7 +104,7 @@ async def get_safe_haven_demand(time_filter: str = "year", difference: int = 20,
                                      end_date=now.strftime('%Y-%m-%d'),
                                      interval=interval)
         
-        #  20+ Year Treasury Bond ETF represent bonds
+        # 20+ Year Treasury Bond ETF represent bonds
         tlt = await fetch_stock_data("TLT", start_date=start_date.strftime('%Y-%m-%d'),
                                      end_date=now.strftime('%Y-%m-%d'),
                                      interval=interval)
@@ -134,41 +136,65 @@ async def get_safe_haven_demand(time_filter: str = "year", difference: int = 20,
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-# TODO: Calculate stock price breadth: McClellan Volume Summation Index
-@router.get("/market-sentiment/stock_price_breadth")
-async def get_stock_price_breadth(time_filter: str = "year", interval: str = "1d"):
+
+# TODO: Yield spread: junk bonds vs investment grade
+@router.get("/market-sentiment/yield_spread")
+async def get_yield_spread(time_filter: str = "year", interval: str = "1d"):
     try:
+        # Make sure the cut off is a year from now
+        now = datetime.now()
+        start_year = (now - timedelta(days=365)).year
+        start_date = datetime(start_year, 1, 1)
 
-        fetch_NYSE_stock()
-        return None
-    except Exception as e :
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        # Junk Bond ETF (HYG)
+        hyg = await fetch_stock_data("HYG", start_date=start_date.strftime('%Y-%m-%d'),
+                                        end_date=now.strftime('%Y-%m-%d'),
+                                        interval=interval)
 
-
-#  TODO: Calculate the NYSE highs and lows (maybe: high computational power)
-@router.get("/market-sentiment/highs_lows")
-async def get_highs_lows(window_size: int = 52, interval: str = "1d"):
-    # Moving average unit is in weeks
-    try:
+        # Investment Grade Bond ETF (LQD)
+        lqd = await fetch_stock_data("LQD", start_date=start_date.strftime('%Y-%m-%d'),
+                                        end_date=now.strftime('%Y-%m-%d'),
+                                        interval=interval)
         
+        # Calculate the rolling dividend yields (as a proxy for bond yields)
+        hyg["yield"] = hyg["Close_HYG"].pct_change(periods=1) + 1  # Approximation for dividend yield
+        lqd["yield"] = lqd["Close_LQD"].pct_change(periods=1) + 1  # Approximation for dividend yield
+
+        # Merge the data on the timestamp
+        merged = pd.DataFrame({
+            "timestamp": hyg["Date"],
+            "HYG_yield": hyg["yield"],
+            "LQD_yield": lqd["yield"]
+        }).dropna()
+
+        # Calculate the yield spread
+        merged["yield_spread"] = merged["HYG_yield"] - merged["LQD_yield"]
+
+        # Calculate the fear/greed score
+        merged_mean = merged["yield_spread"].mean()
+        merged_std = merged["yield_spread"].std()
+        merged["z_score"] = (merged["yield_spread"] - merged_mean) / merged_std
+        merged["fear_greed_score"] = merged["z_score"].apply(
+            lambda z: 100 - ((max(min(z, 2), -2) + 2) * 25)
+        )
+
+        # Select display columns
+        merged = merged[["timestamp", "yield_spread", "fear_greed_score"]].to_dict(orient="records")
+
+        return {"junk_bond_demand": merged}
+    
         return None
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
 
-
-
-
 '''
 TODO:
-- vix index with 50 days moving average
-- Net new 52-week highs and lows on NYSE
-- 5-day average put/call ratio -> cannot be done (paywall / no puts and calls ratio that is available for historical )
-- Market momentum: S&P 500 and its 125-day moving average
-- Yield spread: junk bonds vs. investment grade
-- Difference in 20-day stock and bond returns
-- McClellan Volume Summation Index
+- vix index with 50 days moving average v
+- Market momentum: S&P 500 and its 125-day moving average v
+- Yield spread: junk bonds vs. investment grade v
+- Difference in 20-day stock and bond returns v
 '''
 
 # TODO: check how to each index is fear and greed
