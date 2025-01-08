@@ -28,7 +28,7 @@ semaphore = asyncio.Semaphore(os.cpu_count() * 2)
 # limit = 251 (trading days in a year)
 async def fetch_reddit_posts(
         subreddit_name: str, query: str, 
-        time_filter: str, limit: int = 251) -> list:
+        time_filter: str, limit: int) -> list:
     '''
     Args:
         subreddit_name (str): The name of the subreddit (e.g., 'stocks').
@@ -109,7 +109,7 @@ def engagement_rate(submission: asyncpraw.models.Submission, max_interest: int=1
 
 
 ### Calculate social sentiment
-async def fetch_social_sentiment(subreddit: str, query: str, time_filter: str, limit: int = None) -> pd.DataFrame:
+async def fetch_social_sentiment(subreddit: str, query: str, time_filter: str, limit: int = 250) -> pd.DataFrame:
     """
     API endpoint to fetch Reddit posts from a subreddit.
 
@@ -126,14 +126,14 @@ async def fetch_social_sentiment(subreddit: str, query: str, time_filter: str, l
         # Run the the sentiment analysis in parrallel
         async def analyze_post_sentiment(post: dict):
             async with semaphore:
-                sentiment = await get_post_sentiment(post['title'], post['comments'], post["interest score"])
+                sentiment = await calculate_post_sentiment(post['title'], post['comments'], post["interest score"])
                 return {
-                    "title": post["title"],
                     "timestamp": post["timestamp"],
-                    "interest score": post["interest score"],
+                    "sentiment": sentiment,
                     "article url": post["article url"],
+                    "title": post["title"],
                     "top comment": post["comments"][0][0] if len(post["comments"]) > 0 else "",
-                    "sentiment": sentiment
+                    "article url": post["article url"],
                 }
 
         posts = await fetch_reddit_posts(subreddit, query, time_filter, limit)
@@ -141,10 +141,14 @@ async def fetch_social_sentiment(subreddit: str, query: str, time_filter: str, l
         tasks = [analyze_post_sentiment(post) for post in posts]
         
         analyzed_sentiment = await asyncio.gather(*tasks, return_exceptions=False)
-
         # TODO: store data in MongoDB and use Redis for fast retrieval
                                                 
         analyzed_sentiment = pd.DataFrame(analyzed_sentiment)
+
+        # Get the top post of each day
+        analyzed_sentiment['Abs'] = analyzed_sentiment['sentiment'].abs()
+        analyzed_sentiment = analyzed_sentiment.loc[analyzed_sentiment.groupby('timestamp')['Abs'].idxmax()]
+        analyzed_sentiment = analyzed_sentiment.drop(columns=['Abs'])
 
         return analyzed_sentiment
 
@@ -155,7 +159,7 @@ async def fetch_social_sentiment(subreddit: str, query: str, time_filter: str, l
 
 
 ### Analyze each submission sentiment
-async def get_post_sentiment(title: str, comments: list, interest_score: float, title_weight: float = 0.3, comments_weight: float = 0.7) -> dict:
+async def calculate_post_sentiment(title: str, comments: list, interest_score: float, title_weight: float = 0.3, comments_weight: float = 0.7) -> dict:
     try:
         total_votes = sum(comment[1] for comment in comments) or 1 # avoid division by 0
         sentiment_scores = []
@@ -199,20 +203,9 @@ async def get_post_sentiment(title: str, comments: list, interest_score: float, 
             overall_positive_score = overall_positive_score / sum_score
             overall_negative_score = overall_negative_score / sum_score
 
-        overall_label = ""
-        if overall_positive_score > overall_negative_score:
-            overall_label = "POSITIVE"
-        elif overall_positive_score < overall_negative_score:
-            overall_label = "NEGATIVE"
-        else:
-            overall_label = "NEUTRAL"
-        
         # Calculate net sentiment with weighted interest score
         net_sentiment = (overall_positive_score - overall_negative_score) * interest_score
-        return {
-            "label": overall_label,
-            "sentiment": net_sentiment
-        }
+        return net_sentiment
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

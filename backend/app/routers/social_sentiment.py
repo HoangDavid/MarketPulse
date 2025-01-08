@@ -24,8 +24,12 @@ async def get_social_sentiment(subreddit: str, query: str, time_filter: str, lim
         start_time = time.perf_counter()
         
         # Fetch social sentiment
-        analyzed_sentiment = await fetch_social_sentiment(
-            subreddit=subreddit, query=query, time_filter=time_filter, limit=limit)
+        if limit == None:
+            analyzed_sentiment = await fetch_social_sentiment(
+                subreddit=subreddit, query=query, time_filter=time_filter)
+        else:
+             analyzed_sentiment = await fetch_social_sentiment(
+                subreddit=subreddit, query=query, time_filter=time_filter, limit=limit)
         
         analyzed_sentiment = analyzed_sentiment.to_dict("records")
     
