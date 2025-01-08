@@ -1,19 +1,14 @@
 import asyncpraw
 import asyncio
 import math
-import logging
 import os
+import time
+from fastapi import HTTPException
+import pandas as pd
 from decouple import config
 from datetime import datetime
 from zoneinfo import ZoneInfo
-
-
-# Logging for server
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
+from services.resource_init import MODELS
 
 # Initialize the Reddit client
 reddit = asyncpraw.Reddit(
@@ -27,7 +22,10 @@ reddit = asyncpraw.Reddit(
 # Take into account the computer resource
 semaphore = asyncio.Semaphore(os.cpu_count() * 2) 
 
-# Used for historical and updating sentiment of posts throughout the week, limit = 251 (trading days in a year)
+
+
+### Fetch reddit posts from Reddit API
+# limit = 251 (trading days in a year)
 async def fetch_reddit_posts(
         subreddit_name: str, query: str, 
         time_filter: str, limit: int = 251) -> list:
@@ -79,7 +77,9 @@ async def fetch_reddit_posts(
     
     return sorted_posts
 
-# Calculate the influential index of a submission based of engagement rate in the comments volume, 
+
+
+### Calculate the influential index of a submission based of engagement rate in the comments volume, 
 def engagement_rate(submission: asyncpraw.models.Submission, max_interest: int=100000) -> float:
     try:
         # Metrics:
@@ -104,23 +104,115 @@ def engagement_rate(submission: asyncpraw.models.Submission, max_interest: int=1
         return normalized_interest
 
     except Exception as e:
-        logging.error(f"Error calculating engagement rate for submission{submission.title}:{e}", exc_info=True)
-        return 0
-    
+        raise HTTPException(status_code=500, detail=str(e))
 
-    
-    
-    
 
-'''
-Rolling correlation: to mark events
-- r/technology: news and public opinion on the matter -> use distilbert/Finbert to sentiment on a headline
-- r/walstreetbets as well to aid sparse data
-TODO:
-- order the posts in increasing order by time
-- time_filter: year => sort by day
-    - net sentiment of the day if there are more than one post in that day
 
-- time_filter: day -> sort by the hours
+### Calculate social sentiment
+async def fetch_social_sentiment(subreddit: str, query: str, time_filter: str, limit: int = None) -> pd.DataFrame:
+    """
+    API endpoint to fetch Reddit posts from a subreddit.
 
-'''
+    Args:
+        subreddit (str): Subreddit name.
+        query (str): query within the subreddit
+        sort_by (str): sort the post by hot, popularity, best, relevance
+        limit (int): Number of posts to fetch (default: 10).
+
+    Returns:
+        JSON response with that subreddit posts sentiment score
+    """
+    try:
+        # Run the the sentiment analysis in parrallel
+        async def analyze_post_sentiment(post: dict):
+            async with semaphore:
+                sentiment = await get_post_sentiment(post['title'], post['comments'], post["interest score"])
+                return {
+                    "title": post["title"],
+                    "timestamp": post["timestamp"],
+                    "interest score": post["interest score"],
+                    "article url": post["article url"],
+                    "top comment": post["comments"][0][0] if len(post["comments"]) > 0 else "",
+                    "sentiment": sentiment
+                }
+
+        posts = await fetch_reddit_posts(subreddit, query, time_filter, limit)
+        
+        tasks = [analyze_post_sentiment(post) for post in posts]
+        
+        analyzed_sentiment = await asyncio.gather(*tasks, return_exceptions=False)
+
+        # TODO: store data in MongoDB and use Redis for fast retrieval
+                                                
+        analyzed_sentiment = pd.DataFrame(analyzed_sentiment)
+
+        return analyzed_sentiment
+
+    except Exception as e:
+        # TODO:Logging in the server and send a payload to the client
+        raise HTTPException(status_code=500, detail=str(e))
+   
+
+
+### Analyze each submission sentiment
+async def get_post_sentiment(title: str, comments: list, interest_score: float, title_weight: float = 0.3, comments_weight: float = 0.7) -> dict:
+    try:
+        total_votes = sum(comment[1] for comment in comments) or 1 # avoid division by 0
+        sentiment_scores = []
+        
+        # Run the model for comments sentiment analysis
+        for comment in comments:
+            # Model max input token is 512
+            sentiments = await asyncio.to_thread(
+                MODELS['social_sentiment'], 
+                comment[0][:512], 
+                return_all_scores=True)
+
+            for sentiment in sentiments[0]:
+                sentiment_scores.append({
+                    "label": sentiment["label"],
+                    "score": sentiment["score"],
+                    "weight": comment[1] / total_votes
+                })
+
+        # Aggregrate the seniments from the comments
+        comments_negative_score = sum(s["score"] * s["weight"] for s in sentiment_scores if s["label"] == "NEGATIVE")
+        comments_positive_score = sum(s["score"] * s["weight"] for s in sentiment_scores if s["label"] == "POSITIVE")
+
+        
+        # Run the model for title sentiment analysis
+        title_sentiment = await asyncio.to_thread(
+            MODELS['social_sentiment'],
+            title, 
+            return_all_scores=True)
+    
+        title_score = {}
+        for sentiment in title_sentiment[0]:
+            title_score[sentiment['label']] = sentiment["score"]
+
+        overall_positive_score = title_score["POSITIVE"] * title_weight + comments_positive_score * comments_weight
+        overall_negative_score = title_score["NEGATIVE"] * title_weight + comments_negative_score * comments_weight
+
+        # normalized score
+        sum_score = overall_positive_score + overall_negative_score
+        if sum_score > 0:
+            overall_positive_score = overall_positive_score / sum_score
+            overall_negative_score = overall_negative_score / sum_score
+
+        overall_label = ""
+        if overall_positive_score > overall_negative_score:
+            overall_label = "POSITIVE"
+        elif overall_positive_score < overall_negative_score:
+            overall_label = "NEGATIVE"
+        else:
+            overall_label = "NEUTRAL"
+        
+        # Calculate net sentiment with weighted interest score
+        net_sentiment = (overall_positive_score - overall_negative_score) * interest_score
+        return {
+            "label": overall_label,
+            "sentiment": net_sentiment
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
