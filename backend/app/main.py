@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import market_sentiment, social_sentiment, stock_price
+from routers import market_sentiment, social_sentiment, stock_price, analyze_market
 from services.resource_init import lifespan
 
 
@@ -12,6 +12,9 @@ app.include_router(stock_price.router, prefix="/api", tags=["stock-price"])
 
 # Include Market sentiment indicator router
 app.include_router(market_sentiment.router, prefix="/api", tags=["market-sentiment"])
+
+# Include Marked events router
+app.include_router(analyze_market.router, prefix="/api", tags=["analyze-market"])
 
 @app.get("/")
 async def root():

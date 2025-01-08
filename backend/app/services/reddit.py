@@ -27,10 +27,10 @@ reddit = asyncpraw.Reddit(
 # Take into account the computer resource
 semaphore = asyncio.Semaphore(os.cpu_count() * 2) 
 
-# Used for historical and updating sentiment of posts throughout the week
+# Used for historical and updating sentiment of posts throughout the week, limit = 251 (trading days in a year)
 async def fetch_reddit_posts(
         subreddit_name: str, query: str, 
-        time_filter: str, limit: int = None) -> list:
+        time_filter: str, limit: int = 251) -> list:
     '''
     Args:
         subreddit_name (str): The name of the subreddit (e.g., 'stocks').
@@ -52,12 +52,16 @@ async def fetch_reddit_posts(
             await submission.comments.replace_more(limit=0)
 
             interest_score = engagement_rate(submission)
+
+            time_stamp = None
+            if time_filter in ["year", "month", "week"]:
+                time_stamp = datetime.fromtimestamp(submission.created_utc, ZoneInfo("US/Eastern")).strftime('%Y-%m-%d')
+            elif time_filter == "day":
+                time_stamp = datetime.fromtimestamp(submission.created_utc, ZoneInfo("US/Eastern")).strftime('%Y-%m-%d %H:%M:%S')
             
             return {
                 "title": submission.title,
-                "timestamp": datetime.fromtimestamp(
-                    submission.created_utc, ZoneInfo("US/Eastern")
-                ).strftime('%Y-%m-%d %H:%M:%S'),
+                "timestamp": time_stamp,
                 "interest score": interest_score,
                 "article url": submission.url, 
                 "comments": [(comment.body, comment.score)  for comment in submission.comments]
@@ -65,12 +69,15 @@ async def fetch_reddit_posts(
 
     # Queue the tasks to run concurrently
     tasks = []
-    async for submission in subreddit.search(f'title:{query}', time_filter=time_filter, sort="new", limit=limit):
+    async for submission in subreddit.search(f'title:{query}', time_filter=time_filter, sort="top", limit=limit):
         tasks.append(fetch_one_post(submission))
 
     posts = await asyncio.gather(*tasks, return_exceptions=False)
+
+    # Sort posts by timestamp
+    sorted_posts = sorted(posts, key=lambda x: x["timestamp"])
     
-    return posts
+    return sorted_posts
 
 # Calculate the influential index of a submission based of engagement rate in the comments volume, 
 def engagement_rate(submission: asyncpraw.models.Submission, max_interest: int=100000) -> float:
@@ -110,6 +117,10 @@ Rolling correlation: to mark events
 - r/technology: news and public opinion on the matter -> use distilbert/Finbert to sentiment on a headline
 - r/walstreetbets as well to aid sparse data
 TODO:
-- filter posts to remove noises 
-- filter batch process the comments for sentiment as well
+- order the posts in increasing order by time
+- time_filter: year => sort by day
+    - net sentiment of the day if there are more than one post in that day
+
+- time_filter: day -> sort by the hours
+
 '''

@@ -30,7 +30,7 @@ async def analyze_social_sentiment(subreddit: str, query: str, time_filter: str,
         # Run the the sentiment analysis in parrallel
         async def analyze_post_sentiment(post: dict):
             async with semaphore:
-                sentiment = await get_post_sentiment(post['title'], post['comments'])
+                sentiment = await get_post_sentiment(post['title'], post['comments'], post["interest score"])
                 return {
                     "title": post["title"],
                     "timestamp": post["timestamp"],
@@ -49,6 +49,8 @@ async def analyze_social_sentiment(subreddit: str, query: str, time_filter: str,
         # Calculate the latency for the operation
         end_time = time.perf_counter()
         latency = end_time - start_time
+
+        # TODO: store data in MongoDB and use Redis for fast retrieval                                        
         
         return {"subreddit": subreddit, "latency": latency ,"analyzed_sentiment": analyzed_sentiment}
 
@@ -58,7 +60,7 @@ async def analyze_social_sentiment(subreddit: str, query: str, time_filter: str,
     
 
 # Analyze each submission sentiment
-async def get_post_sentiment(title: str, comments: list, title_weight: float = 0.3, comments_weight: float = 0.7) -> dict:
+async def get_post_sentiment(title: str, comments: list, interest_score: float, title_weight: float = 0.3, comments_weight: float = 0.7) -> dict:
     try:
         total_votes = sum(comment[1] for comment in comments) or 1 # avoid division by 0
         sentiment_scores = []
@@ -109,11 +111,12 @@ async def get_post_sentiment(title: str, comments: list, title_weight: float = 0
             overall_label = "NEGATIVE"
         else:
             overall_label = "NEUTRAL"
-
+        
+        # Calculate net sentiment with weighted interest score
+        net_sentiment = (overall_positive_score - overall_negative_score) * interest_score
         return {
             "label": overall_label,
-            "POSITIVE": overall_positive_score,
-            "NEGATIVE": overall_negative_score
+            "sentiment": net_sentiment
         }
     
     except Exception as e:

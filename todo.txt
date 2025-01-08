@@ -25,8 +25,7 @@ Helpful command:
 
 
 Data flow (maybe):
-- Data (subreddits) from API is processed and stored in Kafka topics (data has timeout delete to release resource) with cluster
-- A hosted model call for new data using a consumer (multiple consumers) hourly to process and stored the processed data in MongoDB
+....
 
-- Data (Yahoo stock markets) from API is processed  and stored ____
-- Consumer call for the sentiment analysis score and stock market price and calculate correlation score then rank events
+Core functionalities:
+- sentiemnt correlation analysis (lagged: 0, -1, -2 ) -> only extreme sentiment + high interest rate have affects
