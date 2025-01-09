@@ -13,3 +13,5 @@ Yield spread indicator:
 - LQD: Tracks the iBoxx $ Investment Grade Corporate Bond Index.
 
 Getting historical sentiment / stock takes ~ 5 minutes
+
+Optimized DistilBert for faster inference using ONX: quantized the model for INT8

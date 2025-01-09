@@ -161,41 +161,36 @@ async def fetch_social_sentiment(subreddit: str, query: str, time_filter: str, l
 ### Analyze each submission sentiment
 async def calculate_post_sentiment(title: str, comments: list, interest_score: float, title_weight: float = 0.3, comments_weight: float = 0.7) -> dict:
     try:
-        total_votes = sum(comment[1] for comment in comments) or 1 # avoid division by 0
+        total_votes = sum(comment[1] for comment in comments) # avoid division by 0
         sentiment_scores = []
         
         # Run the model for comments sentiment analysis
         for comment in comments:
             # Model max input token is 512
             sentiments = await asyncio.to_thread(
-                MODELS['social_sentiment'], 
-                comment[0][:512], 
-                return_all_scores=True)
-
-            for sentiment in sentiments[0]:
-                sentiment_scores.append({
-                    "label": sentiment["label"],
-                    "score": sentiment["score"],
-                    "weight": comment[1] / total_votes
-                })
+                MODELS['social_sentiment']["predict"], 
+                comment[0][:512]
+                )
+        
+            sentiment_scores.append({
+                "NEGATIVE": sentiments[0],
+                "POSITIVE": sentiments[1],
+                "weight": comment[1] / total_votes
+             })
 
         # Aggregrate the seniments from the comments
-        comments_negative_score = sum(s["score"] * s["weight"] for s in sentiment_scores if s["label"] == "NEGATIVE")
-        comments_positive_score = sum(s["score"] * s["weight"] for s in sentiment_scores if s["label"] == "POSITIVE")
+        comments_negative_score = sum(s["NEGATIVE"] * s["weight"] for s in sentiment_scores)
+        comments_positive_score = sum(s["POSITIVE"] * s["weight"] for s in sentiment_scores)
 
         
         # Run the model for title sentiment analysis
         title_sentiment = await asyncio.to_thread(
-            MODELS['social_sentiment'],
-            title, 
-            return_all_scores=True)
-    
-        title_score = {}
-        for sentiment in title_sentiment[0]:
-            title_score[sentiment['label']] = sentiment["score"]
+            MODELS['social_sentiment']["predict"],
+            title
+            )
 
-        overall_positive_score = title_score["POSITIVE"] * title_weight + comments_positive_score * comments_weight
-        overall_negative_score = title_score["NEGATIVE"] * title_weight + comments_negative_score * comments_weight
+        overall_negative_score = title_sentiment[0] * title_weight + comments_negative_score * comments_weight
+        overall_positive_score = title_sentiment[1] * title_weight + comments_positive_score * comments_weight
 
         # normalized score
         sum_score = overall_positive_score + overall_negative_score
@@ -205,7 +200,7 @@ async def calculate_post_sentiment(title: str, comments: list, interest_score: f
 
         # Calculate net sentiment with weighted interest score
         net_sentiment = (overall_positive_score - overall_negative_score) * interest_score
-        return net_sentiment
+        return net_sentiment.item()
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
