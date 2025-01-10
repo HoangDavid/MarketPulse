@@ -161,7 +161,7 @@ async def fetch_social_sentiment(subreddit: str, query: str, time_filter: str, l
 ### Analyze each submission sentiment
 async def calculate_post_sentiment(title: str, comments: list, interest_score: float, title_weight: float = 0.3, comments_weight: float = 0.7) -> dict:
     try:
-        total_votes = sum(comment[1] for comment in comments) # avoid division by 0
+        total_votes = sum(comment[1] for comment in comments) or 1 # avoid division by 0
         sentiment_scores = []
         
         # Run the model for comments sentiment analysis

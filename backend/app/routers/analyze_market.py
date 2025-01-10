@@ -1,3 +1,5 @@
+import time
+import matplotlib.pyplot as plt
 import pandas as pd
 from fastapi import APIRouter
 from util.util import convert_time_filter
@@ -11,7 +13,10 @@ router = APIRouter()
 
 @router.get("/analyze-market/{company}")
 async def analyze_market(ticker: str, company: str, time_filter: str = "year"):
-    # TODO: Spear correlation with market sentiment and social sentiment
+
+    # Calculate latency for for total analysis
+    start = time.time()
+
     start_date, end_date, interval = convert_time_filter(time_filter=time_filter)
 
     # Get stock price
@@ -33,13 +38,55 @@ async def analyze_market(ticker: str, company: str, time_filter: str = "year"):
     ys = await fetch_yield_spread(start_date=start_date, 
                     end_date=end_date, interval=interval)
     
-    # TODO: add time lagged analysis -1, -2 so to not miss sentiment that the day is closed
-    print(stock_data)
-    print(social_data)
-    print(vix)
-    print(mm)
-    print(sh)
-    print(ys)
-    
+    # TODO: detect spike in sentiment
+    # TODO: rolling correlations between stock and greed / fear score
 
-    return {}
+    print(social_data)
+    '''
+    - positive spike sentiment and positive correlation suggests increase stock and greed (momentum) -> mark event + action: Momentum trade
+    - negative spike sentiment and positive correlation suggests decrease stock and greed (fight or flight)-> mark event + action: Potential exit
+    - else give mixed signal -> actional insights
+    '''
+    ### Fill the gaps between sentiment using interpolation and forward filling
+    
+    # Threshold for interpolation (days)
+    social_data['timestamp'] = pd.to_datetime(social_data['timestamp'])
+    social_data.set_index('timestamp', inplace=True)
+
+    # Plot the data
+    # Resample the data to daily frequency  
+    social_data_resampled = social_data[['sentiment']].resample('D').mean()
+    social_data_resampled['is_original'] = ~social_data_resampled['sentiment'].isna()
+
+# Interpolate missing values
+    social_data_resampled['sentiment'] = social_data_resampled['sentiment'].interpolate()
+
+    # Apply a 7-day rolling average
+    social_data_resampled['rolling_sentiment'] = social_data_resampled['sentiment'].rolling(window=7, min_periods=1).mean()
+
+    # Plot the rolling average
+    plt.figure(figsize=(12, 6))
+    plt.plot(
+        social_data_resampled.index,
+        social_data_resampled['rolling_sentiment'],
+        label='7-Day Rolling Average',
+        color='orange',
+        linestyle='--'
+    )
+
+    plt.scatter(
+        social_data_resampled[social_data_resampled['is_original']].index,
+        social_data_resampled[social_data_resampled['is_original']]['rolling_sentiment'],
+        label='Original Data (on Rolling Avg)',
+        color='blue',
+        zorder=5
+    )
+    plt.title('Sentiment Data with 7-Day Rolling Average (Based on Calendar Days)')
+    plt.xlabel('Timestamp')
+    plt.ylabel('Sentiment')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    latency = time.time() - start
+
+    return {"latency": latency}

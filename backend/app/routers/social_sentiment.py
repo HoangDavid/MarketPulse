@@ -20,9 +20,6 @@ async def get_social_sentiment(subreddit: str, query: str, time_filter: str, lim
         JSON response with that subreddit posts sentiment score
     """
     try:
-        # Start time for latency check
-        start_time = time.perf_counter()
-        
         # Fetch social sentiment
         if limit == None:
             analyzed_sentiment = await fetch_social_sentiment(
@@ -31,15 +28,9 @@ async def get_social_sentiment(subreddit: str, query: str, time_filter: str, lim
              analyzed_sentiment = await fetch_social_sentiment(
                 subreddit=subreddit, query=query, time_filter=time_filter, limit=limit)
         
-        analyzed_sentiment = analyzed_sentiment.to_dict("records")
-    
-        # Calculate the latency for the operation
-        end_time = time.perf_counter()
-        latency = end_time - start_time
-
-        # TODO: store data in MongoDB and use Redis for fast retrieval                                        
+        analyzed_sentiment = analyzed_sentiment.to_dict("records")                                      
         
-        return {"subreddit": subreddit, "latency": latency ,"analyzed_sentiment": analyzed_sentiment}
+        return {"subreddit": subreddit, "analyzed_sentiment": analyzed_sentiment}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
