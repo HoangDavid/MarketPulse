@@ -11,6 +11,7 @@ async def get_stock_data(ticker: str, time_filter: str = "year", interval: str =
     try:
         
         start_date, end_date, interval = convert_time_filter(time_filter=time_filter)
+        print(end_date)
 
         # To calculate daily stock returns
         cutoff_date = start_date - timedelta(days=5)

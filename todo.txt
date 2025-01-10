@@ -29,3 +29,4 @@ Data flow (maybe):
 
 Core functionalities:
 - sentiemnt correlation analysis (lagged: 0, -1, -2 ) -> only extreme sentiment + high interest rate have affects
+

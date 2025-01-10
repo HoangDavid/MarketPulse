@@ -12,6 +12,6 @@ Yield spread indicator:
 - HYG: Tracks the iBoxx $ High Yield Corporate Bond Index
 - LQD: Tracks the iBoxx $ Investment Grade Corporate Bond Index.
 
-Getting historical sentiment / stock takes ~ 5 minutes
+Getting historical sentiment / stock takes ~ 8 - 10 minutes
 
-Optimized DistilBert for faster inference using ONX: quantized the model for INT8
+Optimized DistilBert for faster inference using ONX: quantized the model for INT8  ~ 1 minute for a year worth data
