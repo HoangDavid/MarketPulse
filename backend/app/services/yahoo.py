@@ -189,5 +189,3 @@ async def fetch_yield_spread(start_date: str, end_date: str, interval: str = "1d
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-
-  

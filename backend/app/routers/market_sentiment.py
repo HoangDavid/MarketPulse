@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from util.util import convert_time_filter
+from util.util import convert_time_filter, calculate_fear_greed_score
 from services.yahoo import fetch_vix, fetch_market_momentum, fetch_safe_haven_demand, fetch_yield_spread
 
 
@@ -28,6 +28,18 @@ async def get_market_sentiment(indicator: str, time_filter: str = "year"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
+@router.get("/market-sentiment/fear_greed_score")
+async def get_fear_greed_score(time_filter: str = "year"):
+    try:
+        start_date, end_date, interval = convert_time_filter(time_filter)
+        data = await calculate_fear_greed_score(start_date=start_date, end_date=end_date, interval=interval) 
+        
+        data = data.to_dict("records")
+        return {"fear_greed_score": data}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+    
 
 '''
 TODO:

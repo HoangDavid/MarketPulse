@@ -1,19 +1,43 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
+from services.yahoo import fetch_vix, fetch_yield_spread, \
+    fetch_safe_haven_demand, fetch_market_momentum
 
 
+
+### Calculate rolling correlations between fear / greed score and stock
+def calculate_rolling_correlations():
+    pass
+
+
+### Calculate fear / greed score from market indicator
+async def calculate_fear_greed_score(start_date: str, end_date: str, interval: str) -> pd.DataFrame:
+
+    # Fetch the market sentiment indicators
+    vix = await fetch_vix(start_date=start_date, 
+                    end_date=end_date, interval=interval)
+    mm = await fetch_market_momentum(start_date=start_date, 
+                    end_date=end_date, interval=interval)
+    sh = await fetch_safe_haven_demand(start_date=start_date, 
+                    end_date=end_date, interval=interval)
+    ys = await fetch_yield_spread(start_date=start_date, 
+                    end_date=end_date, interval=interval)
+    
+    return None
 
 ### Fill missing data, moving average, and detect spikes
-def process_sentiment_data(start_date: str, data: pd.DataFrame, threshold: int = 5, rolling_avg: int = 7, std_multiplier: int = 2):
+def process_sentiment_data(start_date: datetime, data: pd.DataFrame, threshold: int = 5, 
+                           rolling_avg: int = 7, pos_std_multiplier: int = 1.5, neg_std_multiplier: int = 2):
     '''
         threshold: 5 -> interpolation within 5 trading days else backward / forward fill
         rolling_avg: 7 -> smoother trend of sentiment
-        std_multiplier: 2 -> the larger the greater the extreme sentiment threshold
+        pos_std_multiplier: 1.5 -> the larger the greater the extreme sentiment threshold
+        neg_std_multiplier: 2 -> the larger the greater the extreme sentiment threshold
     '''
     # TODO: fill missing data from start_date
     data["timestamp"] = pd.to_datetime(data["timestamp"])
-    date_range = pd.date_range(start=data['timestamp'].min(), end=data['timestamp'].max())
+    date_range = pd.date_range(start=start_date, end=data['timestamp'].max())
 
     # Reindex to add all dates
     merged = pd.DataFrame({'timestamp': date_range})
@@ -30,18 +54,22 @@ def process_sentiment_data(start_date: str, data: pd.DataFrame, threshold: int =
 
     # Backward / Forward fill for larger gaps of missing data
     merged.loc[large_gaps, "sentiment_filled"] = merged["sentiment_filled"].fillna(method="ffill").fillna(method="bfill")
+    merged["sentiment_filled"] = merged["sentiment_filled"].fillna(method="bfill")
 
     # Rolling average for smoother trends of sentiment
     merged["is_filled"] = merged['sentiment'].isna()
     merged["rolling_avg"] = merged["sentiment_filled"].rolling(window=rolling_avg, min_periods=1).mean()
 
     # Threshold for extreme spikes
-    positive_spike_threshold = merged["rolling_avg"].mean() + merged["rolling_avg"].std() * std_multiplier
-    negative_spike_threshold = merged["rolling_avg"].mean() - merged["rolling_avg"].std() * std_multiplier
+    positive_spike_threshold = merged["rolling_avg"].mean() + merged["rolling_avg"].std() * pos_std_multiplier
+    negative_spike_threshold = merged["rolling_avg"].mean() - merged["rolling_avg"].std() * neg_std_multiplier
 
     # Detect extreme
     merged["positive_spike"] = (merged["rolling_avg"] > positive_spike_threshold) & (~merged['is_filled'])
     merged["negative_spike"] = (merged["rolling_avg"] < negative_spike_threshold) & (~merged['is_filled'])
+
+    # Fill nan values with empty string
+    merged = merged.fillna("")
 
     ### PLOT FOR DEGBUGGING
     # plt.figure(figsize=(12, 6))
@@ -59,7 +87,12 @@ def process_sentiment_data(start_date: str, data: pd.DataFrame, threshold: int =
     # plt.grid()
     # plt.show()
 
-    return None
+    # Select columns
+    merged["sentiment"] = merged["rolling_avg"]
+    merged["timestamp"] = merged["timestamp"].dt.strftime('%Y-%m-%d')
+    merged = merged[['timestamp', 'sentiment', 'positive_spike', 'negative_spike', 'article url', 'title', 'top comment']]
+
+    return positive_spike_threshold, negative_spike_threshold, merged
 
 
 ### Convert time filter to start and end dates
