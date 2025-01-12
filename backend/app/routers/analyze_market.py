@@ -1,6 +1,7 @@
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 from fastapi import APIRouter
 from routers.stock_price import get_stock_data
 from services.reddit import fetch_social_sentiment
@@ -42,8 +43,73 @@ async def analyze_market(ticker: str, company: str, time_filter: str = "year"):
     - else give mixed signal -> actional insights
     '''
 
-    # Identify momentum trade, potential exit, and mixed signals
+    # Merge based on stock price timestamps
+    merged = pd.merge(
+        rolling_correlations,
+        social_data,
+        on='timestamp',
+        how='left'
+    )
+
+    # Identify signals
+    conditions = [
+        (merged["positive_spike"] & (merged['correlation'] > 0.3)),
+        (merged["negative_spike"] & (merged['correlation'] > 0.3)),
+        ((merged['positive_spike'] | merged['negative_spike']) & (merged['correlation'] <= 0))
+    ]
+    options = ['Momentum trade', 'Potential exit', 'Mixed signal']
+
+    merged['action'] = np.select(
+        conditions,
+        options,
+        default='no signal'
+    )
+
+    # # PLOT FOR DEBUGGING
+    # signals_data = merged[merged['action'] != 'no signal']
+    # fig, ax1 = plt.subplots(figsize=(14, 7))
+    # ax1.plot(
+    #     merged['timestamp'],
+    #     merged['price'],
+    #     label='Stock Price (Trading Days)',
+    #     color='red',
+    #     linestyle='-'
+    # )
+    # ax1.set_ylabel('Stock Price', color='red')
+    # ax1.tick_params(axis='y', labelcolor='red')
+    # ax2 = ax1.twinx()
+    # ax2.plot(
+    #     merged['timestamp'],
+    #     merged['sentiment'],
+    #     label='Sentiment (All Days)',
+    #     color='blue',
+    #     linestyle='--'
+    # )
+    # ax2.set_ylabel('Sentiment', color='blue')
+    # ax2.tick_params(axis='y', labelcolor='blue')
+    # colors = {'Momentum trade': 'green', 'Potential exit': 'orange', 'Mixed signal': 'purple'}
+    # for action, color in colors.items():
+    #     filtered_data = signals_data[signals_data['action'] == action]
+    #     ax2.scatter(
+    #         filtered_data['timestamp'],
+    #         filtered_data['sentiment'],
+    #         label=f'Signal: {action}',
+    #         color=color,
+    #         s=100,
+    #         alpha=0.8
+    #     )
+    # fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.85), bbox_transform=ax1.transAxes)
+    # plt.title('Stock Price and Sentiment with Signals')
+    # plt.grid()
+    # plt.tight_layout()
+    # plt.show()
+
+    merged = merged.fillna("")
+    
 
     latency = time.time() - start
 
-    return {"latency": latency, "test": rolling_correlations.to_dict("records")}
+    return {"latency": latency, 
+            "extreme postive threshold": extreme_pos_threshold, 
+            "extreme negative threshold": extreme_neg_threshold,
+            "market analyzed": merged.to_dict("records")}

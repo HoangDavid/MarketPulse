@@ -53,7 +53,7 @@ async def calculate_fear_greed_score(start_date: str, end_date: str, interval: s
 
 ### Fill missing data, moving average, and detect spikes
 def process_sentiment_data(start_date: datetime, data: pd.DataFrame, threshold: int = 5, 
-                           rolling_avg: int = 7, pos_std_multiplier: int = 1.5, neg_std_multiplier: int = 2):
+                           rolling_avg: int = 7, pos_std_multiplier: int = 1, neg_std_multiplier: int = 1):
     '''
         threshold: 5 -> interpolation within 5 trading days else backward / forward fill
         rolling_avg: 7 -> smoother trend of sentiment
@@ -96,27 +96,11 @@ def process_sentiment_data(start_date: datetime, data: pd.DataFrame, threshold: 
     # Fill nan values with empty string
     merged = merged.fillna("")
 
-    ### PLOT FOR DEGBUGGING
-    # plt.figure(figsize=(12, 6))
-    # plt.plot(merged['timestamp'], merged['rolling_avg'], label='Rolling Average', color='blue', linestyle='--')
-    # positive_spikes = merged[merged['positive_spike']]
-    # plt.scatter(positive_spikes['timestamp'], positive_spikes['rolling_avg'], color='green', label='Extreme Positive Spikes (Original)', zorder=5)
-    # negative_spikes = merged[merged['negative_spike']]
-    # plt.scatter(negative_spikes['timestamp'], negative_spikes['rolling_avg'], color='red', label='Extreme Negative Spikes (Original)', zorder=5)
-    # plt.axhline(positive_spike_threshold, color='green', linestyle='--', label='Positive Spike Threshold')
-    # plt.axhline(negative_spike_threshold, color='red', linestyle='--', label='Negative Spike Threshold')
-    # plt.xlabel('Timestamp')
-    # plt.ylabel('Rolling Average Sentiment')
-    # plt.title('Rolling Average with Extreme Positive and Negative Spikes (Original Points Only)')
-    # plt.legend()
-    # plt.grid()
-    # plt.show()
-
     # Select columns
     merged["sentiment"] = merged["rolling_avg"]
     merged["timestamp"] = merged["timestamp"].dt.strftime('%Y-%m-%d')
-    merged = merged[['timestamp', 'sentiment', 'positive_spike', 'negative_spike', 'article url', 'title', 'top comment']]
-
+    merged = merged[['timestamp', 'sentiment', 'article url', 'title', 'top comment', 'positive_spike', 'negative_spike',]]
+    
     return positive_spike_threshold, negative_spike_threshold, merged
 
 
