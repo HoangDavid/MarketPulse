@@ -21,21 +21,11 @@ async def get_market_sentiment(indicator: str, time_filter: str = "year"):
             data = await fetch_safe_haven_demand(start_date=start_date, end_date=end_date, interval=interval)
         elif indicator == "yield_spread":
             data = await fetch_yield_spread(start_date=start_date, end_date=end_date, interval=interval)
+        elif indicator == "fear_greed_score":
+            data = await calculate_fear_greed_score(start_date=start_date, end_date=end_date, interval=interval)
         
         data = data.to_dict("records")
         return {f'{indicator}': data}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-
-@router.get("/market-sentiment/fear_greed_score")
-async def get_fear_greed_score(time_filter: str = "year"):
-    try:
-        start_date, end_date, interval = convert_time_filter(time_filter)
-        data = await calculate_fear_greed_score(start_date=start_date, end_date=end_date, interval=interval) 
-        
-        data = data.to_dict("records")
-        return {"fear_greed_score": data}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")

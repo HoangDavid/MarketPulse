@@ -6,9 +6,22 @@ from services.yahoo import fetch_vix, fetch_yield_spread, \
 
 
 
-### Calculate rolling correlations between fear / greed score and stock
-def calculate_rolling_correlations():
-    pass
+### Calculate rolling correlations between fear / greed score and stock price
+def calculate_rolling_correlations(stock_data:pd.DataFrame, fear_greed_score: pd.DataFrame, window_size: int = 7) -> pd.DataFrame:
+
+    stock_data.set_index('timestamp', inplace=True)
+    fear_greed_score.set_index('timestamp', inplace=True)
+
+    data = pd.concat([stock_data, fear_greed_score], axis=1)
+
+    data = data.dropna()
+
+    data["correlation"] = data["price"].rolling(window=window_size).corr(data["fear_greed_score"])
+
+    data.reset_index(inplace=True)
+    data = data.fillna(0)
+
+    return data
 
 
 ### Calculate fear / greed score from market indicator
@@ -23,8 +36,20 @@ async def calculate_fear_greed_score(start_date: str, end_date: str, interval: s
                     end_date=end_date, interval=interval)
     ys = await fetch_yield_spread(start_date=start_date, 
                     end_date=end_date, interval=interval)
+
+    data = pd.concat([vix[['timestamp', 'fear_greed_score']], 
+                     mm[['timestamp', 'fear_greed_score']], 
+                     sh[['timestamp', 'fear_greed_score']], 
+                     ys[['timestamp', 'fear_greed_score']]])
     
-    return None
+    data = (
+        data.groupby('timestamp', as_index=False)
+        .filter(lambda x: len(x) == 4)
+        .groupby('timestamp', as_index=False)['fear_greed_score']
+        .mean()
+        )
+    
+    return data
 
 ### Fill missing data, moving average, and detect spikes
 def process_sentiment_data(start_date: datetime, data: pd.DataFrame, threshold: int = 5, 
@@ -53,8 +78,8 @@ def process_sentiment_data(start_date: datetime, data: pd.DataFrame, threshold: 
     merged.loc[small_gaps, "sentiment_filled"] = merged.loc[small_gaps, "sentiment_filled"].interpolate(method="linear")
 
     # Backward / Forward fill for larger gaps of missing data
-    merged.loc[large_gaps, "sentiment_filled"] = merged["sentiment_filled"].fillna(method="ffill").fillna(method="bfill")
-    merged["sentiment_filled"] = merged["sentiment_filled"].fillna(method="bfill")
+    merged.loc[large_gaps, "sentiment_filled"] = merged["sentiment_filled"].ffill().bfill()
+    merged["sentiment_filled"] = merged["sentiment_filled"].bfill()
 
     # Rolling average for smoother trends of sentiment
     merged["is_filled"] = merged['sentiment'].isna()
