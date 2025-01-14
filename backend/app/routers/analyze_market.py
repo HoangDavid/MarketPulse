@@ -111,8 +111,8 @@ async def analyze_market(ticker: str, company: str, time_filter: str = "year"):
         latency = time.time() - start
 
         return {"latency": latency,
-                "extreme postive threshold": extreme_pos_threshold, 
-                "extreme negative threshold": extreme_neg_threshold,
-                "market analyzed": merged}
+                "extreme_postive_threshold": extreme_pos_threshold, 
+                "extreme_negative_threshold": extreme_neg_threshold,
+                "market_analyzed": merged}
     except Exception as e:
         raise HTTPException(status_code=500, detail=e)

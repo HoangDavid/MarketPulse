@@ -2,6 +2,7 @@
 GOAL: Market sentiment (tech sector,) analysis and linked to event that cause 
 
 TODO:
+- Reformat the payload
 - Backend handle retry logic, concurrent API calls, and duplidcate requests
 
 - track sentiment and stock price changes correlation using rolling correlation

@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   LineElement,
@@ -9,104 +10,243 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import Chart from 'chart.js/auto';
 import axios from 'axios';
-import { Line } from 'react-chartjs-2';
+import { MarketData } from '../types/MarketData';
+
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler);
 
-interface TestData {
-    timestamp: string;
-    price: number;
-    fear_greed_score: number;
-    correlation: number;
-    sentiment: number;
-    "article url": string;
-    title: string;
-    "top comment": string;
-    positive_spike: boolean;
-    negative_spike: boolean;
-    action: string;
-  }
-  
-interface BackendResponse {
-    latency: number;
-    "extreme postive threshold": number;
-    "extreme negative threshold": number;
-    "market analyzed": TestData[];
-  }
+const verticalLinePlugin = {
+  id: 'verticalLine',
+  afterDatasetsDraw: (chart: any) => {
+    if (chart.tooltip._active && chart.tooltip._active.length) {
+      const ctx = chart.ctx;
+      const activePoint = chart.tooltip._active[0];
+      const x = activePoint.element.x;
+      const topY = chart.chartArea.top;
+      const bottomY = chart.chartArea.bottom;
+
+      // Draw the vertical line
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([5, 5]);
+      ctx.moveTo(x, topY);
+      ctx.lineTo(x, bottomY);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      
+      // Draw the circle on the lines when hovering along the lines
+      chart.data.datasets.forEach((dataset: any, index: number) => {
+        const meta = chart.getDatasetMeta(index);
+        const point = meta.data[activePoint.index];
+        if (point) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+          ctx.fillStyle = dataset.borderColor;
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+    }
+  },
+};
+
 
 function StockSentimentGraph(){
-    const [data, setData] = useState<BackendResponse | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+  const [chartData, setChartData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
 
-    useEffect(() => {
-        const FetchData = async () => {
-            try {
-                const response = await axios.get('http://127.0.0.1:8000/api/analyze-market/apple?ticker=AAPL&time_filter=month');
-                setData(response.data)
-                setIsLoading(false);
-            } catch (err: any) {
-                setError(err.message || 'Error while fetching data')
-                setError('Failed to fetch data');
-                setIsLoading(false);
+  // Fetch data from the backend
+  useEffect(() => {
+    const FetchData = async () => {
+      try {
+        const response = await axios.get(
+          'http://127.0.0.1:8000/api/analyze-market/nvidia?ticker=NVDA&time_filter=year'
+        );
+                
+        // Prepare Chart Data
+        const data: MarketData[] = response.data["market_analyzed"]
+        const timestamps = data.map((item) => item.timestamp)
+        const prices = data.map((item) => item.price)
+        const sentiments = data.map((item) => item.sentiment)
+        const actions = data
+          .filter(
+            (item) =>
+              item.action === "Mixed signal" ||
+              item.action === "Potential exit" ||
+              item.action === "Momentum trade"
+          )
+          .map((item) => ({
+            timestamp: item.timestamp,
+            action: item.action,
+          }));
+
+          console.log(actions)
+
+        // Determine point radius and background color for stock price
+        const PointRadius = timestamps.map((timestamp) =>
+          actions.some((a) => a.timestamp === timestamp) ? 3 : 0
+        );
+
+        const PointBackgroundColor = timestamps.map((timestamp) => {
+          const action = actions.find((a) => a.timestamp === timestamp)?.action;
+          if (action === "Mixed signal") return "orange";
+          if (action === "Potential exit") return "red";
+          if (action === "Momentum trade") return "green";
+          return "rgba(0, 0, 0, 0)";
+        });
+
+        setChartData({
+          labels: timestamps,
+          datasets: [
+            {
+              label: 'Stock price',
+              data: prices,
+              yAxisID: 'yPrice',
+              borderColor:  "rgba(54, 162, 235, 0.7)",
+              backgroundColor: "rgba(54, 162, 235, 0.1)",
+              fill: true,
+              tension: 0.4,
+              pointRadius: PointRadius,
+              pointBackgroundColor: PointBackgroundColor
+            },
+            {
+              label: 'Sentiment',
+              data: sentiments,
+              yAxisID: 'ySentiment',
+              borderColor: "rgba(255, 99, 132, 0.7)",
+              backgroundColor: "rgba(255, 99, 132, 0.1)",
+              tension: 0.4,
+              pointRadius: PointRadius,
+              pointBackgroundColor: PointBackgroundColor
             }
-        };
-        FetchData()
-    }, [])
-
-    useEffect(() => {
-      if (data) {
-          console.log(data['market analyzed']); 
+          ]
+        })
+        
+        setIsLoading(false);
+      } catch (err) {
+        // Catch Error during API call
+        setError(err.message || 'Error while fetching data')
+        setError('Failed to fetch data');
+        setIsLoading(false);
       }
-    }, [data]); 
+    };
+
+  
+    FetchData()
+  }, [])
 
     
-    if (isLoading) return <p>Loading...</p>
-    if (error) return <p>{error}</p>
+  if (isLoading) return <p>Loading...</p>
+  if (error) return <p>{error}</p>
 
-    return (
-    <>
-        <div style={{ padding: '20px' }}>
-      <h1>Backend Data</h1>
-      <p><strong>Latency:</strong> {data?.latency} ms</p>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
-        <thead>
-          <tr>
-            <th>Timestamp</th>
-            <th>Price</th>
-            <th>Fear/Greed Score</th>
-            <th>Correlation</th>
-            <th>Sentiment</th>
-            <th>Article URL</th>
-            <th>Title</th>
-            <th>Top Comment</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-        {data?.['market analyzed'].map((item, index) => (
-          <tr key={index}>
-          <td>{item.timestamp}</td>
-          <td>{item.price.toFixed(2)}</td>
-          <td>{item.fear_greed_score.toFixed(2)}</td>
-          <td>{item.correlation.toFixed(2)}</td>
-          <td>
-            {typeof item.sentiment === "number" ? item.sentiment.toFixed(2) : item.sentiment}
-          </td>
-          <td>{item["article url"] || "No URL"}</td>
-          <td>{item.title || "No Title"}</td>
-          <td>{item["top comment"] || "No Comment"}</td>
-          <td>{item["action"]}</td>
-        </tr>
-        ))}
-        </tbody>
-      </table>
+  return (
+    <div>
+      <h2>Stock Price and Sentiment Over Time</h2>
+      {chartData && (
+        <Line
+          data={chartData}
+          options={{
+            responsive: true,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  generateLabels:(chart) => {
+                    const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart).map((label) => ({
+                      ...label,
+                      usePointStyle: false, 
+                      boxWidth: 40,
+                      borderRadius: 0,
+                    }));
+        
+                    const customLabels = [
+                      {
+                        text: 'Mixed Signal',
+                        fillStyle: 'orange',
+                        strokeStyle: 'orange',
+                        hidden: false,
+                        lineDash: [],
+                        lineWidth: 0,
+                        datasetIndex: undefined,
+                        borderRadius: 10,
+                      },
+                      {
+                        text: 'Potential Exit',
+                        fillStyle: 'red',
+                        strokeStyle: 'red',
+                        hidden: false,
+                        lineDash: [],
+                        lineWidth: 0,
+                        datasetIndex: undefined,
+                        borderRadius: 10,
+                      },
+                      {
+                        text: 'Momentum Trade',
+                        fillStyle: 'green',
+                        strokeStyle: 'green',
+                        hidden: false,
+                        lineDash: [],
+                        lineWidth: 0,
+                        datasetIndex: undefined,
+                        borderRadius: 10,
+                      },
+                    ];
+        
+                    return [...originalLabels, ...customLabels];
+                  },
+                  boxWidth: 15,
+                  usePointStyle: true, 
+                }
+              },
+              tooltip: {
+                enabled: true,
+                mode: 'index',
+                intersect: false,
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Time',
+                },
+              },
+              yPrice: {
+                type: 'linear',
+                position: 'left',
+                title: {
+                  display: true,
+                  text: 'Stock Price',
+                },
+              },
+              ySentiment: {
+                type: 'linear',
+                position: 'right',
+                title: {
+                  display: true,
+                  text: 'Sentiment',
+                },
+                grid: {
+                  drawOnChartArea: false,
+                },
+              },
+            }
+          }}
+          plugins={[verticalLinePlugin]}
+        />
+      )}
     </div>
-    </>
-    )
-
+  );
 }
 
 export default StockSentimentGraph

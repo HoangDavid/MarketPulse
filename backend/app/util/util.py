@@ -97,7 +97,7 @@ async def process_sentiment_data(start_date: datetime, data: pd.DataFrame, thres
     # Select columns
     merged["sentiment"] = merged["rolling_avg"]
     merged["timestamp"] = merged["timestamp"].dt.strftime('%Y-%m-%d')
-    merged = merged[['timestamp', 'sentiment', 'article url', 'title', 'top comment', 'positive_spike', 'negative_spike',]]
+    merged = merged[['timestamp', 'sentiment', 'article_url', 'title', 'top_comment', 'positive_spike', 'negative_spike',]]
 
     return positive_spike_threshold, negative_spike_threshold, merged
 

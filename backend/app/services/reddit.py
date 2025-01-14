@@ -60,8 +60,8 @@ async def fetch_reddit_posts(
             return {
                 "title": submission.title,
                 "timestamp": time_stamp,
-                "interest score": interest_score,
-                "article url": submission.url, 
+                "interest_score": interest_score,
+                "article_url": submission.url, 
                 "comments": [(comment.body, comment.score)  for comment in submission.comments]
             }
 
@@ -126,14 +126,13 @@ async def fetch_social_sentiment(subreddit: str, query: str, time_filter: str, l
         # Run the the sentiment analysis in parrallel
         async def analyze_post_sentiment(post: dict):
             async with semaphore:
-                sentiment = await calculate_post_sentiment(post['title'], post['comments'], post["interest score"])
+                sentiment = await calculate_post_sentiment(post['title'], post['comments'], post["interest_score"])
                 return {
                     "timestamp": post["timestamp"],
                     "sentiment": sentiment,
-                    "article url": post["article url"],
+                    "article_url": post["article_url"],
                     "title": post["title"],
-                    "top comment": post["comments"][0][0] if len(post["comments"]) > 0 else "",
-                    "article url": post["article url"],
+                    "top_comment": post["comments"][0][0] if len(post["comments"]) > 0 else "",
                 }
 
         posts = await fetch_reddit_posts(subreddit, query, time_filter, limit)
