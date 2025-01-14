@@ -151,13 +151,14 @@ async def fetch_safe_haven_demand(start_date: str, end_date: str, difference: in
 # Yield spread: junk bonds vs investment grade
 async def fetch_yield_spread(start_date: str, end_date: str, interval: str = "1d") -> pd.DataFrame:
     try:
+        cutoff_date = start_date - timedelta(days=5)
         # Junk Bond ETF (HYG)
-        hyg = await fetch_stock_data("HYG", start_date=start_date.strftime('%Y-%m-%d'),
+        hyg = await fetch_stock_data("HYG", start_date=cutoff_date.strftime('%Y-%m-%d'),
                                         end_date=end_date.strftime('%Y-%m-%d'),
                                         interval=interval)
 
         # Investment Grade Bond ETF (LQD)
-        lqd = await fetch_stock_data("LQD", start_date=start_date.strftime('%Y-%m-%d'),
+        lqd = await fetch_stock_data("LQD", start_date=cutoff_date.strftime('%Y-%m-%d'),
                                         end_date=end_date.strftime('%Y-%m-%d'),
                                         interval=interval)
         
@@ -182,6 +183,7 @@ async def fetch_yield_spread(start_date: str, end_date: str, interval: str = "1d
         merged["fear_greed_score"] = merged["z_score"].apply(
             lambda z: 100 - ((max(min(z, 2), -2) + 2) * 25)
         )
+        merged = merged[pd.to_datetime(merged["timestamp"]) >= start_date]
 
         # Select display columns
         merged = merged[["timestamp", "yield_spread", "fear_greed_score"]]

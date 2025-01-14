@@ -1,9 +1,24 @@
 from fastapi import FastAPI
 from routers import market_sentiment, social_sentiment, stock_price, analyze_market
+from fastapi.middleware.cors import CORSMiddleware
 from services.resource_init import lifespan
 
-
 app = FastAPI(lifespan=lifespan)
+
+
+allow_origins = ["*"]
+
+
+# TODO: allow only frontend in production
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"], 
+    allow_credentials=True,            
+    allow_methods=["*"],                     
+    allow_headers=["*"],                     
+)
+
 # Include Reddit router
 app.include_router(social_sentiment.router, prefix="/api", tags=["social-sentiment"])
 

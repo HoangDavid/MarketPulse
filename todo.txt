@@ -2,6 +2,8 @@
 GOAL: Market sentiment (tech sector,) analysis and linked to event that cause 
 
 TODO:
+- Backend handle retry logic, concurrent API calls, and duplidcate requests
+
 - track sentiment and stock price changes correlation using rolling correlation
     - have mongoDB up first to store all the data over the year for sentiment score and stock prices
         - for sentiment use market sentiment indicator to aid the lack of social sentiment

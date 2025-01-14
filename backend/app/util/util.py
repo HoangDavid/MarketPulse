@@ -1,13 +1,13 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from services.yahoo import fetch_vix, fetch_yield_spread, \
     fetch_safe_haven_demand, fetch_market_momentum
 
 
 
 ### Calculate rolling correlations between fear / greed score and stock price
-def calculate_rolling_correlations(stock_data:pd.DataFrame, fear_greed_score: pd.DataFrame, window_size: int = 7) -> pd.DataFrame:
+async def calculate_rolling_correlations(stock_data:pd.DataFrame, fear_greed_score: pd.DataFrame, window_size: int = 7) -> pd.DataFrame:
 
     stock_data.set_index('timestamp', inplace=True)
     fear_greed_score.set_index('timestamp', inplace=True)
@@ -52,7 +52,7 @@ async def calculate_fear_greed_score(start_date: str, end_date: str, interval: s
     return data
 
 ### Fill missing data, moving average, and detect spikes
-def process_sentiment_data(start_date: datetime, data: pd.DataFrame, threshold: int = 5, 
+async def process_sentiment_data(start_date: datetime, data: pd.DataFrame, threshold: int = 5, 
                            rolling_avg: int = 7, pos_std_multiplier: int = 1, neg_std_multiplier: int = 1):
     '''
         threshold: 5 -> interpolation within 5 trading days else backward / forward fill
@@ -60,14 +60,12 @@ def process_sentiment_data(start_date: datetime, data: pd.DataFrame, threshold: 
         pos_std_multiplier: 1.5 -> the larger the greater the extreme sentiment threshold
         neg_std_multiplier: 2 -> the larger the greater the extreme sentiment threshold
     '''
-    # TODO: fill missing data from start_date
     data["timestamp"] = pd.to_datetime(data["timestamp"])
     date_range = pd.date_range(start=start_date, end=data['timestamp'].max())
-
+    
     # Reindex to add all dates
     merged = pd.DataFrame({'timestamp': date_range})
-    merged = merged.merge(data, on='timestamp', how='left')
-
+    merged = data.merge(merged, on='timestamp', how='outer')
     # Calculate the gaps of missing data
     merged['sentiment_filled'] = merged['sentiment'].copy()
     gap_sizes = merged['timestamp'].diff().dt.days
@@ -100,14 +98,14 @@ def process_sentiment_data(start_date: datetime, data: pd.DataFrame, threshold: 
     merged["sentiment"] = merged["rolling_avg"]
     merged["timestamp"] = merged["timestamp"].dt.strftime('%Y-%m-%d')
     merged = merged[['timestamp', 'sentiment', 'article url', 'title', 'top comment', 'positive_spike', 'negative_spike',]]
-    
+
     return positive_spike_threshold, negative_spike_threshold, merged
 
 
 ### Convert time filter to start and end dates
 def convert_time_filter(time_filter: str):
     start_date = None
-    end_date = datetime.now()
+    end_date = datetime.combine(datetime.now().date(), time.min)
     interval = "1d"
     
     if time_filter == "year":
