@@ -15,49 +15,6 @@ import axios from 'axios';
 import { MarketData } from '../types/MarketData';
 
 
-ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler);
-
-const verticalLinePlugin = {
-  id: 'verticalLine',
-  afterDatasetsDraw: (chart: any) => {
-    if (chart.tooltip._active && chart.tooltip._active.length) {
-      const ctx = chart.ctx;
-      const activePoint = chart.tooltip._active[0];
-      const x = activePoint.element.x;
-      const topY = chart.chartArea.top;
-      const bottomY = chart.chartArea.bottom;
-
-      // Draw the vertical line
-      ctx.save();
-      ctx.beginPath();
-      ctx.setLineDash([5, 5]);
-      ctx.moveTo(x, topY);
-      ctx.lineTo(x, bottomY);
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-
-      
-      // Draw the circle on the lines when hovering along the lines
-      chart.data.datasets.forEach((dataset: any, index: number) => {
-        const meta = chart.getDatasetMeta(index);
-        const point = meta.data[activePoint.index];
-        if (point) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-          ctx.fillStyle = dataset.borderColor;
-          ctx.fill();
-          ctx.restore();
-        }
-      });
-    }
-  },
-};
-
-
 function StockSentimentGraph(){
   const [chartData, setChartData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -248,5 +205,47 @@ function StockSentimentGraph(){
     </div>
   );
 }
+
+ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler);
+
+const verticalLinePlugin = {
+  id: 'verticalLine',
+  afterDatasetsDraw: (chart: any) => {
+    if (chart.tooltip._active && chart.tooltip._active.length) {
+      const ctx = chart.ctx;
+      const activePoint = chart.tooltip._active[0];
+      const x = activePoint.element.x;
+      const topY = chart.chartArea.top;
+      const bottomY = chart.chartArea.bottom;
+
+      // Draw the vertical line
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([5, 5]);
+      ctx.moveTo(x, topY);
+      ctx.lineTo(x, bottomY);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      
+      // Draw the circle on the lines when hovering along the lines
+      chart.data.datasets.forEach((dataset: any, index: number) => {
+        const meta = chart.getDatasetMeta(index);
+        const point = meta.data[activePoint.index];
+        if (point) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+          ctx.fillStyle = dataset.borderColor;
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+    }
+  },
+};
 
 export default StockSentimentGraph

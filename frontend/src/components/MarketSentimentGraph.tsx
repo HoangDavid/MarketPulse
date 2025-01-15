@@ -8,7 +8,7 @@ interface MarketIndicatorProps{
 
 function MarketSentimentGraph({indicator}:MarketIndicatorProps){
     
-    const [marketIndex, setMarketIndex] =
+    const [marketIndex, setMarketIndex] = 
 
     useEffect(() => {
 
