@@ -2,7 +2,6 @@ import asyncpraw
 import asyncio
 import math
 import os
-import time
 from fastapi import HTTPException
 import pandas as pd
 from decouple import config

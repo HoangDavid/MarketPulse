@@ -2,24 +2,19 @@
 GOAL: Market sentiment (tech sector,) analysis and linked to event that cause 
 
 TODO:
-- Reformat the payload
-- Backend handle retry logic, concurrent API calls, and duplidcate requests
+FrontEnd:
+- Top bar similar to Yahoo Finance. With logo "Market Pulse!" + search bar (ticker + company name)
+- Stock and sentiment graph + key events rank by sentiment extreme (pos -> neg -> mixed) (filter by year / month / week / day)
+- Fear/Greed indicator + graph
+- 4 market indcators graph + for each graph fear / greed conclusion
 
-- track sentiment and stock price changes correlation using rolling correlation
-    - have mongoDB up first to store all the data over the year for sentiment score and stock prices
-        - for sentiment use market sentiment indicator to aid the lack of social sentiment
-    - historical: store the stock price / sentiment score by the days (5 days, 1 month, 6 months, 1 year)
-    - real-time:
-        - store the stock price / sentiment score by the hours in the current day
-        - after the day calculate the average sentiment / correlation after the end of day
 
-- Highlight key events on the timeline that connect changes to the stock price movment (somehow ???)
-- Rank those events in terms of influence (top 10)
-
-- Fetch/calculate the market sentiment indicators
-- write the functions for preprocessing in utils folder to do targeted sentiment analysis / find a aspect-based model
-- real-time update (from terminal) sentiment score using both social sentiment and weighted market sentiment indcators
-
+BackEnd:
+- update for sentiment conlusion on each end point of market sentiment
+- Set up MongoDB for data storage
+- Use redis for fast databse retrieval
+- Backend handle retry logic, concurrent API calls, and duplidcate requests (maybe use Kafka here)
+- Make the retreiving of each companies data (when already sought for updated hourly) -> real time update? -> hard nut to crack
 
 
 Helpful command:

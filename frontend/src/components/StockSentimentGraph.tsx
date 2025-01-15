@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -69,7 +69,7 @@ function StockSentimentGraph(){
     const FetchData = async () => {
       try {
         const response = await axios.get(
-          'http://127.0.0.1:8000/api/analyze-market/nvidia?ticker=NVDA&time_filter=year'
+          'http://127.0.0.1:8000/api/analyze-market/nvidia?ticker=NVDA&time_filter=month'
         );
                 
         // Prepare Chart Data
