@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {Box, Typography} from '@mui/material'
+import {Box, Typography, Tooltip} from '@mui/material'
 import {styled} from '@mui/system';
 import { Line } from 'react-chartjs-2';
 import {
@@ -8,7 +8,6 @@ import {
   PointElement,
   LinearScale,
   CategoryScale,
-  Tooltip,
   Legend,
   Filler,
   Plugin
@@ -18,7 +17,7 @@ import Chart from 'chart.js/auto';
 import axios from 'axios';
 import { MarketData } from '../types/MarketData';
 
-ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler);
+ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Legend, Filler);
 
 interface StockSentimentProps {
   company: string,
@@ -76,13 +75,20 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
     position: "relative",
     backgroundColor: "white",
     padding: "20px",
-    marginTop: "20px",
-    borderRadius: 5
+    marginTop: "10px",
+    borderRadius: 5,
+    height: "80%",
+    overflowY: "scroll"
   }
 
   const Event = styled(Typography)({
     position: "relative",
-    marginBottom: 10
+    marginBottom: 10,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    cursor: "pointer",
+    fontSize: 14
   })
 
   const BoardTitle = styled(Typography)({
@@ -104,12 +110,12 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
     const FetchData = async () => {
       try {
         const response = await axios.get(
-          `http://127.0.0.1:8000/api/analyze-market/${company}?ticker=${ticker}&time_filter=month`
+          `http://127.0.0.1:8000/api/analyze-market/${company}?ticker=${ticker}&time_filter=year`
         );
                 
         // Prepare Chart Data
         const data: MarketData[] = response.data["market_analyzed"]
-        const timestamps = data.map((item) => new Date(item.timestamp).toISOString());
+        const timestamps = data.map((item) => item.timestamp);
         const prices = data.map((item) => item.price)
         const sentiments = data.map((item) => item.sentiment)
         const actions = data
@@ -126,19 +132,19 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
             correlation: item.correlation
           }));
         
-        // Take top 5 events over time
+        // Take top 3 events over time
         const events = actions
-          .sort((a, b) => a.value - b.value)
-          .slice(0, 5)
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 8)
 
         setTopEvents(events)
 
         const PointRadius = timestamps.map((timestamp) =>
-          actions.some((a) => new Date(a.timestamp).toISOString() === timestamp) ? 5 : 0
+          actions.some((a) => a.timestamp === timestamp) ? 5 : 0
         );
 
         const PointBackgroundColor = timestamps.map((timestamp) => {
-          const action = actions.find((a) => new Date(a.timestamp).toISOString() === timestamp)?.action;
+          const action = actions.find((a) => a.timestamp === timestamp)?.action;
           if (action === "Mixed signal") return "#FFD700";
           if (action === "Potential exit") return "#FF4500";
           if (action === "Momentum trade") return "#3CB371";
@@ -181,6 +187,12 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
   
     FetchData()
   }, [ticker, company])
+
+  const actionColors: { [key: string]: string } = {
+    "Mixed signal": "#FFC000",
+    "Potential exit": "#FF4500",
+    "Momentum trade": "#3CB371",
+  };
 
   
   // Add loading animation
@@ -312,7 +324,28 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
         {topEvents?.map((event, index)=> (
           <>
           <Event key={index}>
-            {index + 1}. {event.headline}
+          <Tooltip title={
+            <div style={{ textAlign: "left", padding: "5px", maxWidth: "300px" }}>
+            <div style={{ fontWeight: "bold", marginBottom: "5px" }}>{event.headline}</div>
+            <div style={{ fontSize: "12px", marginBottom: "5px" }}>
+              <strong>Date:</strong> {event.timestamp}
+            </div>
+            <div style={{ fontSize: "14px", fontStyle: "italic" }}>
+            <strong>Others saying:</strong> "{event.top_comment}"
+            </div>
+            </div>}>
+            <a
+              href={event.url}
+              style={{ textDecoration: "none", color: "blue"}}
+            >
+              {index + 1}. {event.headline}
+            </a>
+          </Tooltip>
+          <div style={{ marginTop: "5px", fontSize: "14px", color: "#555" }}>
+            <strong>Date:</strong> {event.timestamp} <br/>
+            <strong>Action:</strong> <span style={{color: actionColors[event.action],fontWeight: 600,}}>{event.action}</span> <br/>
+            <strong>Others saying:</strong> "{event.top_comment}"
+          </div>
           </Event>
           </>
         ))}

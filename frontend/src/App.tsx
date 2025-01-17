@@ -15,7 +15,6 @@ function App() {
     margin: 0,
     backgroundColor: "white",
     padding: "14px 20px",
-    border: "solid",
     marginLeft: "auto",
     marginRight: "auto"
   }
