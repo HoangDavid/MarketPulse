@@ -40,7 +40,8 @@ function NavBar({onSearch}: NavBarProps){
         borderRadius: "20px",
         border:"1px solid #e0e4e9",
         padding: "10px",
-        cursor: "pointer"
+        cursor: "pointer",
+        backgroundColor: "white"
     })
 
     // Search Logic
