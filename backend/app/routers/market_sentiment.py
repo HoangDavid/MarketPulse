@@ -5,12 +5,11 @@ from services.yahoo import fetch_vix, fetch_market_momentum, fetch_safe_haven_de
 
 
 router = APIRouter()
-
 # Fetch market sentiment indicators
 @router.get("/market-sentiment/{indicator}")
 async def get_market_sentiment(indicator: str, time_filter: str = "year"):
     try:
-        start_date, end_date, interval = convert_time_filter(time_filter)
+        start_date, end_date, interval = await convert_time_filter(time_filter)
 
         data = None
         if indicator == "vix":
@@ -28,7 +27,7 @@ async def get_market_sentiment(indicator: str, time_filter: str = "year"):
         return {f'{indicator}': data}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)} from get_market_sentiment")
     
 
 '''

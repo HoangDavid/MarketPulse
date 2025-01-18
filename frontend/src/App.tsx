@@ -1,4 +1,5 @@
 import StockSentimentGraph from './components/StockSentimentGraph'
+import FearGreedMeter from './components/GaugeMeter';
 import NavBar from './components/layout/navbar'
 import {useState} from "react"
 import {styled } from '@mui/system';
@@ -65,7 +66,6 @@ function App() {
     <NavBar onSearch={handleSearch}/>
     <Container sx={container}>
       <Subtitle>{company} Real Time Setiment and Price • USD</Subtitle>
-      {/* Add Follow Button here to get live update of extreme sentiment */}
       <div>
         <Title>{company} ({ticker})</Title>
         <FollowBttn>
@@ -78,7 +78,11 @@ function App() {
           }}/>Follow
         </FollowBttn>
       </div>
+      <div style={{marginBottom: 30, borderBottom: "3px solid #4682B4", padding: "10px"}}>
       <StockSentimentGraph company={company} ticker={ticker}/>
+      </div>
+      <Title>Fear & Greed Index</Title>
+      <FearGreedMeter/>
     </Container>
     </>
   )

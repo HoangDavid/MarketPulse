@@ -5,24 +5,16 @@ import os
 import asyncio
 from fastapi import HTTPException
 
-# Define a semaphore to limit the downloads
-semaphore = asyncio.Semaphore(os.cpu_count() * 2)
-
 # Fetch stock data from Yahoo API
 async def fetch_stock_data(ticker: str, start_date: str, end_date: str, interval: str) -> pd.DataFrame:
     try: 
-        async with semaphore:
-            data = await asyncio.to_thread(
-                yf.download,
-                ticker,
-                threads=True,
-                start=start_date,
-                end=end_date,
-                interval=interval
-                )
+        
+        data = yf.download(ticker, threads=True, start=start_date, end=end_date,interval=interval)
         
         if data.empty:
             raise ValueError(f"No data avalaible for {ticker}")
+        
+        print(data)
         
         data.reset_index(inplace=True)
         if isinstance(data.columns, pd.MultiIndex):
@@ -33,7 +25,7 @@ async def fetch_stock_data(ticker: str, start_date: str, end_date: str, interval
         
         return df
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)} from fetch_stock_data()")
     
 
 
@@ -45,8 +37,8 @@ async def fetch_vix(start_date: str, end_date: str, moving_avg: int = 50, interv
         cutoff_date = start_date - timedelta(days=moving_avg * 2)
 
         vix_data = await fetch_stock_data("^VIX", start_date=cutoff_date.strftime('%Y-%m-%d'),
-                                           end_date=end_date.strftime('%Y-%m-%d'), 
-                                           interval=interval)
+                                            end_date=end_date.strftime('%Y-%m-%d'), 
+                                            interval=interval)
         
         # Calculate moving avg of vix
         vix_data[f"VIX_{moving_avg}"] = vix_data["Close_^VIX"].rolling(window=moving_avg).mean()

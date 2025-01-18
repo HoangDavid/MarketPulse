@@ -3,7 +3,7 @@ import {useEffect, useState} from 'react';
 
 
 interface MarketIndicatorProps{
-    data: 
+    
 }
 
 function MarketSentimentGraph({indicator}:MarketIndicatorProps){

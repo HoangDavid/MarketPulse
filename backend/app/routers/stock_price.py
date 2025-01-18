@@ -10,7 +10,7 @@ router = APIRouter()
 async def get_stock_data(ticker: str, time_filter: str = "year", interval: str = "1d"):
     try:
         
-        start_date, end_date, interval = convert_time_filter(time_filter=time_filter)
+        start_date, end_date, interval = await convert_time_filter(time_filter=time_filter)
 
         # To calculate daily stock returns
         cutoff_date = start_date - timedelta(days=5)

@@ -110,7 +110,7 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
     const FetchData = async () => {
       try {
         const response = await axios.get(
-          `http://127.0.0.1:8000/api/analyze-market/${company}?ticker=${ticker}&time_filter=year`
+          `http://127.0.0.1:8000/api/analyze-market/${company}?ticker=${ticker}&time_filter=month`
         );
                 
         // Prepare Chart Data
@@ -179,7 +179,7 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
       } catch (error) {
         // Catch Error during API call
         console.log(error)
-        setError('Failed to fetch data');
+        setError(`Failed to fetch data: ${error}`);
         setIsLoading(false);
       }
     };
@@ -326,13 +326,13 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
           <Event key={index}>
           <Tooltip title={
             <div style={{ textAlign: "left", padding: "5px", maxWidth: "300px" }}>
-            <div style={{ fontWeight: "bold", marginBottom: "5px" }}>{event.headline}</div>
-            <div style={{ fontSize: "12px", marginBottom: "5px" }}>
-              <strong>Date:</strong> {event.timestamp}
-            </div>
-            <div style={{ fontSize: "14px", fontStyle: "italic" }}>
-            <strong>Others saying:</strong> "{event.top_comment}"
-            </div>
+              <div style={{ fontWeight: "bold", marginBottom: "5px" }}>{event.headline}</div>
+              <div style={{ fontSize: "12px", marginBottom: "5px" }}>
+                <strong>Date:</strong> {event.timestamp}
+              </div>
+              <div style={{ fontSize: "14px", fontStyle: "italic" }}>
+                <strong>Others saying:</strong> "{event.top_comment}"
+              </div>
             </div>}>
             <a
               href={event.url}

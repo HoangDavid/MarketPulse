@@ -14,11 +14,10 @@ router = APIRouter()
 @router.get("/analyze-market/{company}")
 async def analyze_market(ticker: str, company: str, time_filter: str = "year"):
     try:
-
         # Calculate latency for for total analysis
         start = time.time()
 
-        start_date, end_date, interval = convert_time_filter(time_filter=time_filter)
+        start_date, end_date, interval = await convert_time_filter(time_filter=time_filter)
 
         # Get stock price
         stock_data = await get_stock_data(ticker=ticker, 
@@ -115,4 +114,4 @@ async def analyze_market(ticker: str, company: str, time_filter: str = "year"):
                 "extreme_negative_threshold": extreme_neg_threshold,
                 "market_analyzed": merged}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=e)
+        raise HTTPException(status_code=500, detail=f'An Error occured: {str(e)} from analyze_market()')

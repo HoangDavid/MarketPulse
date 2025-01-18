@@ -5,7 +5,6 @@ from services.yahoo import fetch_vix, fetch_yield_spread, \
     fetch_safe_haven_demand, fetch_market_momentum
 
 
-
 ### Calculate rolling correlations between fear / greed score and stock price
 async def calculate_rolling_correlations(stock_data:pd.DataFrame, fear_greed_score: pd.DataFrame, window_size: int = 7) -> pd.DataFrame:
 
@@ -26,7 +25,6 @@ async def calculate_rolling_correlations(stock_data:pd.DataFrame, fear_greed_sco
 
 ### Calculate fear / greed score from market indicator
 async def calculate_fear_greed_score(start_date: str, end_date: str, interval: str) -> pd.DataFrame:
-
     # Fetch the market sentiment indicators
     vix = await fetch_vix(start_date=start_date, 
                     end_date=end_date, interval=interval)
@@ -103,11 +101,11 @@ async def process_sentiment_data(start_date: datetime, data: pd.DataFrame, thres
 
 
 ### Convert time filter to start and end dates
-def convert_time_filter(time_filter: str):
+async def convert_time_filter(time_filter: str):
     start_date = None
     end_date = datetime.combine(datetime.now().date(), time.min)
     interval = "1d"
-    
+
     if time_filter == "year":
         start_year = (end_date - timedelta(days=365)).year
         start_date = datetime(start_year, 1, 1)   
