@@ -79,10 +79,12 @@ function App() {
         </FollowBttn>
       </div>
       <div style={{marginBottom: 30, borderBottom: "3px solid #4682B4", padding: "10px"}}>
-      <StockSentimentGraph company={company} ticker={ticker}/>
+        <StockSentimentGraph company={company} ticker={ticker}/>
       </div>
       <Title>Fear & Greed Index</Title>
-      <FearGreedMeter/>
+      <div style={{marginBottom: 30, borderBottom: "3px solid #4682B4", padding: "10px"}}>
+        <FearGreedMeter/>
+      </div>
     </Container>
     </>
   )

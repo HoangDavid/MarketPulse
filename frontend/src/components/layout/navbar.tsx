@@ -13,7 +13,7 @@ function NavBar({onSearch}: NavBarProps){
     const container ={
         position: "sticky",
         width: "100%",
-        maxWidth: "2000px !important",
+        maxWidth: "none !important",
         margin: 0,
         padding: 0,
         backgroundColor: "#f5f8fa",
@@ -25,7 +25,10 @@ function NavBar({onSearch}: NavBarProps){
         marginLeft: "24px",
         marginRight: "24px",
         padding: "10px 0px",
-        paddingTop: "15px"
+        paddingTop: "15px",
+        width: "100%",
+        maxWidth: "1500px",
+        margin: "auto"
     }
 
     const Logo = styled(Typography)({

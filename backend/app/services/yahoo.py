@@ -13,9 +13,7 @@ async def fetch_stock_data(ticker: str, start_date: str, end_date: str, interval
         
         if data.empty:
             raise ValueError(f"No data avalaible for {ticker}")
-        
-        print(data)
-        
+                
         data.reset_index(inplace=True)
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = ['_'.join(filter(None, col)).strip() for col in data.columns]
