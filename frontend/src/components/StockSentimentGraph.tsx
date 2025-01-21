@@ -198,7 +198,7 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
   // Add loading animation
   if (isLoading) return <p>Loading...</p>
 
-  // Add 
+  // Add error gif here
   if (error) return <p>{error}</p>
 
   return (

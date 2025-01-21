@@ -1,9 +1,40 @@
 import {useEffect, useState} from "react"
-import {Box, Container, Typography} from '@mui/material'
+import {Box, Typography} from '@mui/material'
 import {styled} from '@mui/system';
 import GaugeChart from "react-gauge-chart"
 import axios from 'axios';
+import { FearGreedData } from "../types/FearGreedData";
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Legend,
+  Tooltip,
+  Plugin
+} from 'chart.js';
+import "chartjs-adapter-date-fns";
 
+
+// Register necessary Chart.js components
+ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend);
+
+
+interface ChartData {
+    labels: string[];
+    datasets: {
+      label: string;
+      data: number[];
+      borderColor: string;
+      backgroundColor?: string;
+      fill?: boolean;
+      tension?: number;
+      pointRadius?: number[];
+      pointBackgroundColor?: string[];
+    }[];
+  }
 
 interface OverviewSentiment {
     prev_close: number,
@@ -15,24 +46,19 @@ interface OverviewSentiment {
 function FearGreedMeter() {
 
     // MUI customization
-    const container = {
-        position: "relative",
-        padding: "0px !important",
-        border: "solid",
-    }
-
     const graph = {
         position: "relative",
         display: "inline-block",
-        width: "70%",
+        width: "68%",
         verticalAlign: "middle",
-        boxSizing: "border-box"
+        boxSizing: "border-box",
     }
 
     const detail = {
         position: "relative",
         display: "inline-block",
-        width: "28%",
+        width: "32%",
+        paddingLeft: "20px",
         verticalAlign: "top",
         height: "380px",
         boxSizing: "border-box"
@@ -86,6 +112,7 @@ function FearGreedMeter() {
         last_month: 0,
         last_year: 0
     })
+    const [chartData, setChartData] = useState<ChartData>()
     const [error, setError] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [bttn, setBttn] = useState<boolean>(false)
@@ -93,7 +120,8 @@ function FearGreedMeter() {
 
     useEffect(() => {
         const fetchData = async () => {
-            try{      
+            try{
+                // Prepare data for gauge meter
                 const response = await axios.get( 'http://127.0.0.1:8000/api/market-sentiment/fear_greed_score')
                 const fetched_data = response.data["fear_greed_score"]
                 const data = {
@@ -103,6 +131,26 @@ function FearGreedMeter() {
                     last_year: fetched_data[0]["fear_greed_score"].toFixed(0)
                 }
                 setGaugeData(data)
+
+                // Prepare data for chart
+                const chart_data: FearGreedData[] = fetched_data
+                const timestamps = chart_data.map((item) => item.timestamp)
+                const scores = chart_data.map((item) => item.fear_greed_score)
+
+                setChartData({
+                    labels: timestamps,
+                    datasets: [
+                        {
+                            label: "Fear-Greed Score",
+                            data: scores,
+                            borderColor: "#FF6347",
+                            tension: 0.4
+                        },
+                    ],
+                },
+                )
+
+
                 setIsLoading(false)
             }catch (error){
                 console.log(error)
@@ -139,7 +187,6 @@ function FearGreedMeter() {
 
     return (
     <>
-    <Container sx={container}>
         {!bttn && (
         <Box sx={graph}>
             <GaugeChart
@@ -153,8 +200,46 @@ function FearGreedMeter() {
         </Box>)
         }
 
-        {bttn && (
-            <></>
+        {bttn && chartData && (
+        <Box sx={graph}>
+            <Line
+            data={chartData}
+            options={{
+              responsive: true,
+              plugins:{
+                tooltip: {
+                    enabled: true,
+                    mode: "index",
+                    intersect: false,
+                  },
+              },
+              scales: {
+                x: {
+                  type: "time",
+                  time: {
+                    unit: "month",
+                    displayFormats: {
+                      month: "MMM yyyy",
+                    },
+                  },
+                  title: {
+                    display: true,
+                    text: "Time",
+                  },
+                },
+                y: {
+                  type: "linear",
+                  position: "left",
+                  title: {
+                    display: true,
+                    text: "Fear-Greed Score",
+                  },
+                },
+              },
+            }}
+            plugins={[verticalLinePlugin]}
+          />
+        </Box> 
         )}
         <Box sx={detail}>
             <SwitchBg>
@@ -190,11 +275,57 @@ function FearGreedMeter() {
                 </Sentiment>
             </div>
         </Box>
-    </Container>
 
     </>
     )
 
 }
+
+
+const verticalLinePlugin: Plugin<'line'> = {
+    id: 'verticalLine',
+    beforeDraw: (chart) => {
+      const activeElements = chart.tooltip?.getActiveElements();
+      if (activeElements && activeElements.length > 0) {
+        const ctx = chart.ctx;
+        const x = activeElements[0].element.x;
+        const topY = chart.chartArea.top;
+        const bottomY = chart.chartArea.bottom;
+  
+        // Draw a continuous vertical dashed line
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]); // Dashed line style
+        ctx.moveTo(x, topY);
+        ctx.lineTo(x, bottomY);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'; // Semi-transparent gray
+        ctx.stroke();
+        ctx.restore();
+  
+        // Draw hover points for all datasets at the active index
+        chart.data.datasets.forEach((dataset, datasetIndex) => {
+          const meta = chart.getDatasetMeta(datasetIndex);
+          if (meta && meta.data[activeElements[0].index]) {
+            const point = meta.data[activeElements[0].index];
+            if (point) {
+              ctx.save();
+              ctx.beginPath();
+              ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI); // Slightly larger circle for hover
+              ctx.fillStyle = dataset.borderColor as string; // Match the dataset color
+              ctx.fill();
+              ctx.lineWidth = 2;
+              ctx.strokeStyle = '#fff'; // Add a white outline for contrast
+              ctx.stroke();
+              ctx.restore();
+            }
+          }
+        });
+      }
+    },
+  };
+  
+
+
 
 export default FearGreedMeter
