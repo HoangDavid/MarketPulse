@@ -55,29 +55,39 @@ The system utilizes the [DistilBERT Sentiment Analysis Model](https://huggingfac
    - **Trade-offs**: While the optimized model is faster, there’s a slight decrease in sentiment analysis accuracy.
 
 This optimized pipeline ensures rapid and efficient sentiment analysis, making the system scalable for long-term data processing.
+---
+### Fear & Greed Score and Market Sentiment Indicators
+
+1. **CBOE Volatility Index (VIX)**:
+   - Tracks expected volatility in the S&P 500 over the next 30 days.
+   - Calculates a moving average (e.g., 50-day) to compare with current VIX levels.
+   - **Fear & Greed Score**:
+     - Derived from the z-score of the VIX difference relative to its moving average.
+     - Higher volatility = Higher fear.
+
+2. **S&P 500 Market Momentum**:
+   - Compares the S&P 500 level to its 125-day moving average.
+   - **Fear & Greed Score**:
+     - Calculated using the z-score of changes in momentum.
+     - Above moving average = Greed; Below = Fear.
+
+3. **Safe Haven Demand**:
+   - Measures the performance difference between stocks (SPY) and Treasury bonds (TLT) over 20 days.
+   - **Fear & Greed Score**:
+     - Higher bond demand relative to stocks indicates Fear.
+
+4. **Yield Spread**:
+   - Compares yields of Junk Bond ETF (HYG) and Investment-Grade ETF (LQD).
+   - **Fear & Greed Score**:
+     - Narrow spread = Greed; Wider spread = Fear.
+
+Each indicator is normalized to generate a **Fear & Greed Score** on a 0–100 scale
+---
+### Actionable Insights
 
 ---
-## Calculate and detect sentiments spikes
-pull from Reddit API
-pull reddit submissions from r/technology and calculate sentiments
-post interest rate is calculated using total upvotes/downvotes, discussion volume, discussion quality of a submission -> score is out of 100
-Then, calculate the weighted sentiments of each post 0.3 title_weight and 0.7 top 5 comment_weights sentiments then add both
-Then the sentiment of a post is the sentiment * the interest rate
-
-Drawback:
-- A positive title could have negative comments, reflecting disagreement or skepticism.
-- A negative title could have positive comments, showing support for a company despite criticism.\
-
-Model Optimization: 
-With the default [link to model: https://huggingface.co/distilbert/distilbert-base-uncased-finetuned-sst-2-english] distilbert model
--> sentiment analysis of a year worth data takes about 10' -> too slow
--> solution Optimized DistilBert for faster inference using ONX: quantized the model for INT8  ~ 2' minute for a year worth data (5x faster but trade of for some performance)
----
-
 # Installation and Setup Guide
-
 ## Dependencies
-
 ### Step 1: Create Virtual Environment
 ```bash
 # Create a virtual environment
