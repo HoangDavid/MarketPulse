@@ -63,9 +63,11 @@ yarn install
 1. Go to [Reddit Apps](https://www.reddit.com/prefs/apps)
 2. Create a new application and get your credentials
 3. Add your Reddit API credentials to the configuration file:
+```bash
 CLIENT_ID=your_client_id
 CLIENT_SECRET=your_client_secret
 USER_AGENT=your_user_agent
+```
 
 ### Step 2: Start Backend Server
 ```bash
