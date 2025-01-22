@@ -1,5 +1,6 @@
 import StockSentimentGraph from './components/StockSentimentGraph'
 import FearGreedMeter from './components/GaugeMeter';
+import MarketSentimentGraph from './components/MarketSentimentGraph';
 import NavBar from './components/layout/navbar'
 import {useState} from "react"
 import {styled } from '@mui/system';
@@ -65,6 +66,7 @@ function App() {
     <>
     <NavBar onSearch={handleSearch}/>
     <Container sx={container}>
+      {/* Stock and Sentiment */}
       <Subtitle>{company} Real Time Setiment and Price • USD</Subtitle>
       <div>
         <Title>{company} ({ticker})</Title>
@@ -81,10 +83,17 @@ function App() {
       <div style={{marginBottom: 30, borderBottom: "3px solid #4682B4", padding: "10px"}}>
         <StockSentimentGraph company={company} ticker={ticker}/>
       </div>
+
+      {/* Fear and Greed gauge meter and timeline graph */}
       <Title>Fear & Greed Index</Title>
       <div style={{marginBottom: 30, borderBottom: "3px solid #4682B4", padding: "10px"}}>
         <FearGreedMeter/>
       </div>
+
+      {/* 4 Market Sentiment Indicators */}
+      <Title>4 Market Sentiment Indicators</Title>
+      <MarketSentimentGraph/>
+
     </Container>
     </>
   )

@@ -4,6 +4,7 @@ import {styled} from '@mui/system';
 import GaugeChart from "react-gauge-chart"
 import axios from 'axios';
 import { FearGreedData } from "../types/FearGreedData";
+import { ChartData } from "../types/ChartData";
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -20,21 +21,6 @@ import "chartjs-adapter-date-fns";
 
 // Register necessary Chart.js components
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend);
-
-
-interface ChartData {
-    labels: string[];
-    datasets: {
-      label: string;
-      data: number[];
-      borderColor: string;
-      backgroundColor?: string;
-      fill?: boolean;
-      tension?: number;
-      pointRadius?: number[];
-      pointBackgroundColor?: string[];
-    }[];
-  }
 
 interface OverviewSentiment {
     prev_close: number,
@@ -143,8 +129,9 @@ function FearGreedMeter() {
                         {
                             label: "Fear-Greed Score",
                             data: scores,
-                            borderColor: "#FF6347",
-                            tension: 0.4
+                            borderColor: "#002D62",
+                            tension: 0.4,
+                            pointRadius: chart_data.map(() => 0)
                         },
                     ],
                 },

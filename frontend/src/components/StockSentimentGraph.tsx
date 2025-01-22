@@ -16,27 +16,14 @@ import "chartjs-adapter-date-fns";
 import Chart from 'chart.js/auto';
 import axios from 'axios';
 import { MarketData } from '../types/MarketData';
+import { ChartData } from "../types/ChartData";
+
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Legend, Filler);
 
 interface StockSentimentProps {
   company: string,
   ticker: string,
-}
-
-interface ChartData {
-  labels: string[]; 
-  datasets: {
-    label: string; 
-    data: number[];
-    yAxisID: string;
-    borderColor: string;
-    backgroundColor?: string;
-    fill?: boolean;
-    tension?: number;
-    pointRadius?: number[];
-    pointBackgroundColor?: string[];
-  }[];
 }
 
 interface TopEvents {
@@ -110,7 +97,7 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
     const FetchData = async () => {
       try {
         const response = await axios.get(
-          `http://127.0.0.1:8000/api/analyze-market/${company}?ticker=${ticker}&time_filter=month`
+          `http://127.0.0.1:8000/api/analyze-market/${company}?ticker=${ticker}&time_filter=year`
         );
                 
         // Prepare Chart Data
