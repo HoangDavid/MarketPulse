@@ -1,6 +1,24 @@
 # Real Time Public Sentiment and Stock Price Analysis
+
 # Overview
+
 ## Inspiration
+Market Sentiment Indicators, such as the **CBOE Volatility Index (VIX)**, **S&P 500 Market Momentum**, and **Yield Spreads**, are well-established tools used to gauge investor behavior and predict market movements. These indicators provide valuable insights into fear, greed, and risk appetite within the financial markets. For instance:
+- **VIX** measures expected volatility, helping investors anticipate potential market shifts.
+- **Momentum indicators** reveal trends, highlighting periods of strong or weak market performance.
+- **Yield spreads** reflect investor confidence in riskier assets versus safer alternatives.
+
+While these tools are powerful on their own, they primarily rely on quantitative data from traditional financial sources.
+
+### The Power of Combining Social Sentiment
+
+In the digital age, **social media** has emerged as a significant force in shaping market sentiment. Platforms like **Reddit** can amplify emotions and opinions, often leading to rapid, sentiment-driven moves in stock prices. For example:
+- A viral post about a company's product or management decision can quickly sway public perception.
+- Trending hashtags or discussions on platforms like **Twitter** or **r/WallStreetBets** can trigger massive buying or selling pressures.
+
+By coupling traditional Market Sentiment Indicators with **social sentiment analysis**, we can gain a more holistic view of market dynamics. Social sentiment captures real-time reactions, opinions, and emotions from the crowd, complementing the data-driven insights from Market Sentiment Indicators. Together, these provide a more comprehensive framework for understanding and predicting market movements, enabling investors to make better-informed decisions in a rapidly evolving landscape.
+
+
 ## Architecture
 ### Data Collection and Sentiment Spike Detection
 
