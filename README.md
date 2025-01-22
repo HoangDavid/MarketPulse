@@ -25,10 +25,10 @@ The system is designed to analyze and detect sentiment spikes in online discussi
      - Post Sentiment = (Title Sentiment × 0.3) + (Top Comments Sentiment × 0.7) 
      - The sentiment score is weighted with interest score:  Weighted Sentiment (out of 100) = Post Sentiment × Interest Rate 
 
-- The above approach is robust because the following might happen
-    - **Positive Title with Negative Comments**:
+   - The above approach is robust because the following might happen
+     - **Positive Title with Negative Comments**:
         - Could indicate disagreement or skepticism among users.
-    - **Negative Title with Positive Comments**:
+     - **Negative Title with Positive Comments**:
         - May reflect support for the subject despite external criticism.
 
 4. **Data Preparation and Smoothing**
