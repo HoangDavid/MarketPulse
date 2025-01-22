@@ -55,6 +55,7 @@ The system utilizes the [DistilBERT Sentiment Analysis Model](https://huggingfac
    - **Trade-offs**: While the optimized model is faster, there’s a slight decrease in sentiment analysis accuracy.
 
 This optimized pipeline ensures rapid and efficient sentiment analysis, making the system scalable for long-term data processing.
+
 ---
 ### Fear & Greed Score and Market Sentiment Indicators
 
@@ -82,6 +83,7 @@ This optimized pipeline ensures rapid and efficient sentiment analysis, making t
      - Narrow spread = Greed; Wider spread = Fear.
 
 Each indicator is normalized to generate a **Fear & Greed Score** on a 0–100 scale
+
 ---
 ### Actionable Insights
 
