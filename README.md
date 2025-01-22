@@ -1,22 +1,91 @@
-# MarketPulse-Real-Time-Public-Sentiment-and-Stock-Price-Analytics
+# Real Time Public Sentiment and Stock Price Analysis
 
-how to install dependecies: pip install -r requirements.txt
+# Overview
 
-Post influence score
+# Architecture
 
-r/technology
+## Calculate and detect sentiments spikes
+pull from Reddit API
+pull reddit submissions from r/technology and calculate sentiments
+post interest rate is calculated using total upvotes/downvotes, discussion volume, discussion quality of a submission -> score is out of 100
+Then, calculate the weighted sentiments of each post 0.3 title_weight and 0.7 top 5 comment_weights sentiments then add both
+Then the sentiment of a post is the sentiment * the interest rate
+
+Drawback:
 - A positive title could have negative comments, reflecting disagreement or skepticism.
-- A negative title could have positive comments, showing support for a company despite criticism.
+- A negative title could have positive comments, showing support for a company despite criticism.\
+
+Model Optimization: 
+With the default [link to model: https://huggingface.co/distilbert/distilbert-base-uncased-finetuned-sst-2-english] distilbert model
+-> sentiment analysis of a year worth data takes about 10' -> too slow
+-> solution Optimized DistilBert for faster inference using ONX: quantized the model for INT8  ~ 2' minute for a year worth data (5x faster but trade of for some performance)
+
+
+## Fear Greed Score and Market Sentiment Indicators 
+pull from Yahoo API 
+Fear and Greed 
+
+Market Momentum
+
+Safe Haven
+
+Vix
 
 Yield spread indicator:
 - HYG: Tracks the iBoxx $ High Yield Corporate Bond Index
 - LQD: Tracks the iBoxx $ Investment Grade Corporate Bond Index.
 
-Getting historical sentiment / stock takes ~ 8 - 10 minutes
+## Architecture
 
-Optimized DistilBert for faster inference using ONX: quantized the model for INT8  ~ 1 minute for a year worth data
+### Sentiment Spike Detection
 
-https://youtu.be/8WFTdLFnzp4
+The system is designed to analyze and detect sentiment spikes in online discussions, particularly from the **r/technology** subreddit. Here’s how it works:
+
+1. **Data Collection**:
+   - Reddit submissions are fetched using the Reddit API from the **r/technology** subreddit.
+   - Submissions include titles, top comments, upvote/downvote metrics, and discussion statistics.
+
+2. **Interest Rate Calculation**:
+   - Each Reddit post is assigned a **score out of 100** based on:
+     - **Total Upvotes/Downvotes**: Gauging overall reception.
+     - **Discussion Volume**: The number of comments on the post.
+     - **Discussion Quality**: Weighted contribution of high-ranking comments.
+
+3. **Sentiment Calculation**:
+   - **Weighted Sentiments**:
+     - **Title Sentiment**: Contributes **30%** to the overall sentiment.
+     - **Top 5 Comment Sentiments**: Contribute **70%** to the overall sentiment.
+   - The final sentiment score of a post is calculated as:
+     \[
+     \text{Post Sentiment} = (\text{Title Sentiment} \times 0.3) + (\text{Top Comments Sentiment} \times 0.7)
+     \]
+   - **Weighted Post Sentiment**:
+     - The sentiment score is further adjusted using the interest rate:
+       \[
+       \text{Weighted Sentiment} = \text{Post Sentiment} \times \text{Interest Rate}
+       \]
+
+#### Drawbacks:
+- **Positive Title with Negative Comments**:
+  - Could indicate disagreement or skepticism among users.
+- **Negative Title with Positive Comments**:
+  - May reflect support for the subject despite external criticism.
+
+---
+
+### Model Optimization
+
+The system utilizes the [DistilBERT Sentiment Analysis Model](https://huggingface.co/distilbert/distilbert-base-uncased-finetuned-sst-2-english) to analyze post sentiments. However, processing a year's worth of Reddit data (~10 minutes) was deemed too slow for production use. To address this:
+
+1. **Optimized DistilBERT with ONNX**:
+   - The model was quantized to **INT8** precision, which significantly reduces inference time.
+   - Results:
+     - Original Model: ~10 minutes for a year’s data.
+     - Quantized Model: ~2 minutes for a year’s data (5x faster).
+   - **Trade-offs**: While the optimized model is faster, there’s a slight decrease in sentiment analysis accuracy.
+
+This optimized pipeline ensures rapid and efficient sentiment analysis, making the system scalable for long-term data processing.
+
 
 # Installation and Setup Guide
 
@@ -76,9 +145,10 @@ cd frontend
 # Start development server
 yarn run dev
 ```
+The API will be available at http://localhost:8000
 
 # Demo
-[![Watch the video](https://youtu.be/8WFTdLFnzp4/0.jpg)](https://youtu.be/8WFTdLFnzp4)
+[Watch the video](https://youtu.be/8WFTdLFnzp4)
 
 
 
