@@ -173,7 +173,7 @@ function FearGreedMeter() {
     if (error) return  <div>{error}</div>
 
     return (
-    <>
+    <> 
         {!bttn && (
         <Box sx={graph}>
             <GaugeChart

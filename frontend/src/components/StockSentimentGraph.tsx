@@ -95,6 +95,7 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
   // Fetch data from the backend
   useEffect(() => {
     const FetchData = async () => {
+      setIsLoading(true)
       try {
         const response = await axios.get(
           `http://127.0.0.1:8000/api/analyze-market/${company}?ticker=${ticker}&time_filter=year`
@@ -181,11 +182,8 @@ const  StockSentimentGraph= ({company, ticker}: StockSentimentProps) => {
     "Momentum trade": "#3CB371",
   };
 
-  
-  // Add loading animation
-  if (isLoading) return <p>Loading...</p>
-
   // Add error gif here
+  if (isLoading) return <p>Loading... (might take ≈ 2')</p>
   if (error) return <p>{error}</p>
 
   return (
