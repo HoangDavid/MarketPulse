@@ -40,6 +40,7 @@ The system is designed to analyze and detect sentiment spikes in online discussi
    - **Thresholds**:
      - Positive Spike: Mean + (Std. Dev × Positive Multiplier).
      - Negative Spike: Mean - (Std. Dev × Negative Multiplier).
+     - Positive Multiplier is slighter smaller than Negative Multiplier because public sentiment tend to be more **negative**
    - Flags positive and negative spikes based on these thresholds, excluding interpolated data.
 
 ---
@@ -54,7 +55,7 @@ The system utilizes the [DistilBERT Sentiment Analysis Model](https://huggingfac
      - Quantized Model: ~2 minutes for a year’s data (5x faster).
    - **Trade-offs**: While the optimized model is faster, there’s a slight decrease in sentiment analysis accuracy.
 
-This optimized pipeline ensures rapid and efficient sentiment analysis, making the system scalable for long-term data processing.
+This optimized pipeline ensures rapid and efficient sentiment analysis, making the system scalable (For reference, I ran this model on a M2 chip with 8GB RAM Macbook)
 
 ---
 ### Fear & Greed Score and Market Sentiment Indicators
@@ -86,6 +87,22 @@ Each indicator is normalized to generate a **Fear & Greed Score** on a 0–100 s
 
 ---
 ### Actionable Insights
+
+1. **Momentum Trade**:
+   - **Condition**: Positive rolling correlation (7 trading days) between stock price and Fear & Greed Score, both increasing, coupled with rising sentiment.
+   - **Action**: Signals a bullish market environment. Consider momentum-based trades in highly correlated assets.
+
+2. **Potential Exit**:
+   - **Condition**: Positive rolling correlation, both stock price and Fear & Greed Score decreasing, with sentiment increasing.
+   - **Action**: Indicates bearish sentiment and a potential downturn. Adjust the portfolio by reducing exposure to correlated assets.
+
+3. **Mixed Signals**:
+   - **Condition**: Scenarios not meeting the above criteria.
+   - **Action**: Suggests uncertainty or lack of clear trends. Exercise caution and monitor closely for emerging patterns.
+
+**Why This Helps Investors**:
+- **Momentum Trades**: In a bullish environment, strong sentiment and correlation across sectors suggest opportunities to capitalize on upward trends in correlated assets.
+- **Safe-Haven Adjustments**: During bearish periods, high correlations and sentiment shifts signal a need to pivot towards safer investments like negatively correlated assets or bonds, protecting against volatility and potential losses.
 
 ---
 # Installation and Setup Guide
