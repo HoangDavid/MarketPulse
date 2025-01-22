@@ -18,17 +18,6 @@ Optimized DistilBert for faster inference using ONX: quantized the model for INT
 
 https://youtu.be/8WFTdLFnzp4
 
-
-Dependencies:
-step 1: create a virtual enviroment
-step 2: cd backend -> pip install -r requirements.txt
-step 3: cd frontend -> yarn install
-
-To Use:
-Step 1: Reddit API using your credentials
-Step 2: start the FASTAPI backend by using the following command: cd backend -> uvicorn main:app
-Step 3: start the frontend: cd frontend -> yarn run dev
-
 # Installation and Setup Guide
 
 ## Dependencies
@@ -87,6 +76,9 @@ cd frontend
 # Start development server
 yarn run dev
 ```
+
+# Demo
+[![Watch the video](https://youtu.be/8WFTdLFnzp4/0.jpg)](https://youtu.be/8WFTdLFnzp4)
 
 
 
