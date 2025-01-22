@@ -5,8 +5,9 @@
 ## Inspiration
 Market Sentiment Indicators, such as the **CBOE Volatility Index (VIX)**, **S&P 500 Market Momentum**, and **Yield Spreads**, are well-established tools used to gauge investor behavior and predict market movements. These indicators provide valuable insights into fear, greed, and risk appetite within the financial markets. For instance:
 - **VIX** measures expected volatility, helping investors anticipate potential market shifts.
-- **Momentum indicators** reveal trends, highlighting periods of strong or weak market performance.
+- **Market Momentum** reveal trends, highlighting periods of strong or weak market performance.
 - **Yield spreads** reflect investor confidence in riskier assets versus safer alternatives.
+- **SafeHaven** reflect investor bullishness as they invest in long term bonds
 
 While these tools are powerful on their own, they primarily rely on quantitative data from traditional financial sources.
 
