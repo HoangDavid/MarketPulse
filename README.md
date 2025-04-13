@@ -170,7 +170,6 @@ cd backend
 # Start FastAPI server
 uvicorn main:app --reload
 ```
-The API will be available at http://localhost:8000
 
 ### Step 3: Start Frontend Server
 ```bash
@@ -180,7 +179,6 @@ cd frontend
 # Start development server
 yarn run dev
 ```
-The API will be available at http://localhost:8000
 
 # Demo
 [Watch the video](https://youtu.be/8WFTdLFnzp4)
